@@ -1,9 +1,12 @@
 using UnityEngine;
+using Unity.Netcode;
 
 public class CameraController : MonoBehaviour
 {
     [Header("Target")]
     [SerializeField] private Transform target;
+
+    [Header("Camera Position")]
     [SerializeField] private Vector3 offset = new Vector3(0f, 5f, -8f);
 
     [Header("Rotation Settings")]
@@ -22,19 +25,13 @@ public class CameraController : MonoBehaviour
 
     [SerializeField] private float mouseSensitivity = 3f;
 
-    [Tooltip("Lock and hide the cursor for mouse look")]
+    [Tooltip("Lock and hide the cursor when the game starts")]
     [SerializeField] private bool lockCursor = true;
 
     private float currentYaw = 0f;
 
     void Start()
     {
-        if (target == null)
-        {
-            GameObject player = GameObject.FindGameObjectWithTag("Player");
-            if (player != null) target = player.transform;
-        }
-
         currentYaw = transform.eulerAngles.y;
 
         if (lockCursor && useMouseRotation)
@@ -44,42 +41,95 @@ public class CameraController : MonoBehaviour
         }
     }
 
-    void LateUpdate()
+    void Update()
     {
-        if (target == null) return;
+        // Ctrl toggles the cursor
+        if (Input.GetKeyDown(KeyCode.LeftControl) ||
+            Input.GetKeyDown(KeyCode.RightControl))
+        {
+            if (Cursor.lockState == CursorLockMode.Locked)
+            {
+                Cursor.lockState = CursorLockMode.None;
+                Cursor.visible = true;
+            }
+            else
+            {
+                Cursor.lockState = CursorLockMode.Locked;
+                Cursor.visible = false;
+            }
+        }
 
+        // Escape unlocks cursor
         if (Input.GetKeyDown(KeyCode.Escape))
         {
             Cursor.lockState = CursorLockMode.None;
             Cursor.visible = true;
         }
 
-        if (lockCursor && useMouseRotation && Input.GetMouseButtonDown(0) 
-            && Cursor.lockState != CursorLockMode.Locked)
+        // Find the local player if we don't have one yet
+        if (target == null)
         {
-            Cursor.lockState = CursorLockMode.Locked;
-            Cursor.visible = false;
+            FindLocalPlayer();
         }
 
-        if (useKeyboardRotation && Cursor.lockState == CursorLockMode.Locked)
+        // Keyboard camera rotation
+        if (useKeyboardRotation &&
+            Cursor.lockState == CursorLockMode.Locked)
         {
             if (Input.GetKey(KeyCode.Q))
                 currentYaw -= keyboardRotationSpeed * Time.deltaTime;
+
             if (Input.GetKey(KeyCode.E))
                 currentYaw += keyboardRotationSpeed * Time.deltaTime;
         }
 
-        if (useMouseRotation && Cursor.lockState == CursorLockMode.Locked)
+        // Mouse camera rotation
+        if (useMouseRotation &&
+            Cursor.lockState == CursorLockMode.Locked)
         {
             currentYaw += Input.GetAxis("Mouse X") * mouseSensitivity;
         }
+    }
 
-        Quaternion rotation = Quaternion.Euler(fixedPitchAngle, currentYaw, 0f);
+    void LateUpdate()
+    {
+        // Player hasn't spawned yet
+        if (target == null)
+            return;
+
+        Quaternion rotation = Quaternion.Euler(
+            fixedPitchAngle,
+            currentYaw,
+            0f
+        );
 
         Vector3 position = target.position + rotation * offset;
 
         transform.position = position;
         transform.rotation = rotation;
+    }
+
+    private void FindLocalPlayer()
+    {
+        // NetworkManager hasn't been created yet
+        if (NetworkManager.Singleton == null)
+            return;
+
+        // Look through all NetworkObjects currently spawned
+        NetworkObject[] players =
+            FindObjectsByType<NetworkObject>(
+                FindObjectsSortMode.None
+            );
+
+        foreach (NetworkObject player in players)
+        {
+            // Only use the player owned by this client
+            if (player.IsOwner && player.CompareTag("Player"))
+            {
+                target = player.transform;
+                break;
+            }
+        }
     }
 
     public void SetPitchAngle(float angle)
