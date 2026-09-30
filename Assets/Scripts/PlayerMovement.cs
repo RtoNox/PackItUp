@@ -1,6 +1,8 @@
+using System;
 using UnityEngine;
+using Unity.Netcode;
 
-public class PlayerMovement : MonoBehaviour
+public class PlayerMovement : NetworkBehaviour
 {
     [Header("Movement Settings")]
     [SerializeField] private float walkSpeed = 5f;
@@ -37,6 +39,11 @@ public class PlayerMovement : MonoBehaviour
             cameraTransform = Camera.main.transform;
 
         currentStamina = maxStamina;
+    }
+
+    public override void OnNetworkSpawn()
+    {
+        if(!IsOwner) Destroy(this);
     }
 
     void Update()
