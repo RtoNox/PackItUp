@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class CanvasMainMenu : MonoBehaviour
 {
@@ -8,23 +9,15 @@ public class CanvasMainMenu : MonoBehaviour
     public GameObject mainMenuPanel;
     public GameObject settingsPanel;
 
-   
-    public NetworkButtons networkButtons;
-
     void Start()
     {
         OpenMainMenu();
     }
 
+  
     public void OnStartButtonClicked()
     {
-        if (mainMenuPanel != null) mainMenuPanel.SetActive(false);
-        if (settingsPanel != null) settingsPanel.SetActive(false);
-
-        if (networkButtons != null)
-        {
-            networkButtons.ShowMenu();
-        }
+        SceneManager.LoadScene("Lobby");
     }
 
     public void OnSettingButtonClicked()
@@ -33,18 +26,14 @@ public class CanvasMainMenu : MonoBehaviour
         if (settingsPanel != null) settingsPanel.SetActive(true);
     }
 
+    
     public void OpenMainMenu()
     {
         if (mainMenuPanel != null) mainMenuPanel.SetActive(true);
         if (settingsPanel != null) settingsPanel.SetActive(false);
-
-
-        if (networkButtons != null)
-        {
-            networkButtons.HideMenu();
-        }
     }
 
+  
     public void OnExitButtonClicked()
     {
         Application.Quit();
