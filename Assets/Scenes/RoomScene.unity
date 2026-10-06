@@ -1186,7 +1186,7 @@ MonoBehaviour:
   joinButton: {fileID: 1147034339}
   startButton: {fileID: 389621542}
   maxPlayers: 4
-  gameSceneName: GameScene
+  gameSceneName: Map1
 --- !u!1 &872597694
 GameObject:
   m_ObjectHideFlags: 0
