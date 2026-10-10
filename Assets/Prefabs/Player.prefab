@@ -406,6 +406,9 @@ GameObject:
   - component: {fileID: 3687792214879358078}
   - component: {fileID: 3364312431532932861}
   - component: {fileID: -2901192063355772113}
+  - component: {fileID: 6446947020523890436}
+  - component: {fileID: 612234431940291023}
+  - component: {fileID: 3858305257336768631}
   m_Layer: 0
   m_Name: Player
   m_TagString: Player
@@ -690,6 +693,52 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PlayerName
   ShowTopMostFoldoutHeaderGroup: 1
   nameText: {fileID: 8605323239582992943}
+--- !u!114 &6446947020523890436
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7154400492277183936}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b4b90faceaaa72b408aff294538e5772, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::AbilitySteal
+  ShowTopMostFoldoutHeaderGroup: 1
+  range: 2
+  cooldownTime: 30
+  abilityLevel: 1
+--- !u!114 &612234431940291023
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7154400492277183936}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: acb98a87a2a1f5d43b91343110aacfc3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::AbilityStun
+  ShowTopMostFoldoutHeaderGroup: 1
+  range: 2
+  cooldownTime: 30
+  stunDuration: 5
+  abilityLevel: 1
+--- !u!114 &3858305257336768631
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7154400492277183936}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4249e972e640cd946b1fcd71277afb1c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerAbilityManager
+  ShowTopMostFoldoutHeaderGroup: 1
 --- !u!1 &8904885298641192656
 GameObject:
   m_ObjectHideFlags: 0

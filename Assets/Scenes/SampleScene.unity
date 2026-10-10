@@ -1399,7 +1399,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8b431a7711814c44599fc2fc5e5a70fc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::NetworkButtons
-  showNetworkMenu: 0
+  showNetworkMenu: 1
 --- !u!1 &1966869803
 GameObject:
   m_ObjectHideFlags: 0
