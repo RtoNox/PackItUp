@@ -36,9 +36,21 @@ public class CanvasMainMenu : MonoBehaviour
         if (abilitySelectionPanel != null) abilitySelectionPanel.SetActive(false);
     }
 
+    // Fungsi memilih Ability Steal
     public void OnSelectAbilitySteal()
     {
         PlayerPrefs.SetString("SelectedAbility", "Steal");
+        PlayerPrefs.Save(); // Memastikan nilai tersimpan ke disk
+        Debug.Log("[MainMenu] Ability dipilih: Steal");
+        SceneManager.LoadScene("Lobby");
+    }
+
+    // Fungsi memilih Ability Stun (Dinamakan khusus untuk ButtonStun)
+    public void OnSelectAbilityStun()
+    {
+        PlayerPrefs.SetString("SelectedAbility", "Stun");
+        PlayerPrefs.Save(); // Memastikan nilai tersimpan ke disk
+        Debug.Log("[MainMenu] Ability dipilih: Stun");
         SceneManager.LoadScene("Lobby");
     }
 

@@ -1247,7 +1247,7 @@ MonoBehaviour:
       m_Calls:
       - m_Target: {fileID: 1345996911}
         m_TargetAssemblyTypeName: CanvasMainMenu, Assembly-CSharp
-        m_MethodName: OnSelectAbilitySteal
+        m_MethodName: OnSelectAbilityStun
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
