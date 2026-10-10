@@ -14,12 +14,12 @@ public class GameManager : MonoBehaviour
 
         if(roundTime <= 0)
         {
-            FinishRound();
+            // FinishRound();
         }
     }
 
-    private void FinishRound()
-    {
-    finishPanel.SetActive(true);
-    }
+    // private void FinishRound()
+    // {
+    // finishPanel.SetActive(true);
+    // }
 }
