@@ -10,6 +10,9 @@ public class AbilityStun : NetworkBehaviour
     public float cooldownTime = 30f;
     public float stunDuration = 5f;
     
+    [Header("Input Settings")]
+    public KeyCode assignedKey = KeyCode.R;
+
     [Header("Upgrade & Stack Settings")]
     [Range(1, 3)] public int abilityLevel = 1;
     private int maxStacks = 1;
@@ -38,8 +41,6 @@ public class AbilityStun : NetworkBehaviour
             if (Time.time >= lastUseTime + cooldownTime)
             {
                 currentStacks++;
-                Debug.Log($"[Stun] Stack pulih! Stack saat ini: {currentStacks}/{maxStacks}");
-                
                 if (currentStacks < maxStacks)
                 {
                     lastUseTime = Time.time; 
@@ -51,7 +52,7 @@ public class AbilityStun : NetworkBehaviour
             }
         }
 
-        if (Input.GetKeyDown(KeyCode.Space))
+        if (Input.GetKeyDown(assignedKey))
         {
             TryUseStunServerRpc();
         }
@@ -62,12 +63,11 @@ public class AbilityStun : NetworkBehaviour
     {
         if (currentStacks <= 0)
         {
-            Debug.Log("Ability Stun kehabisan stack / sedang cooldown!");
+            Debug.Log("Ability Stun kehabisan stack / cooldown!");
             return;
         }
 
         Collider[] hitColliders = Physics.OverlapSphere(transform.position, range);
-        bool hitTarget = false;
 
         foreach (var hit in hitColliders)
         {
@@ -85,17 +85,10 @@ public class AbilityStun : NetworkBehaviour
 
                     targetMovement.enabled = false;
                     StartCoroutine(EnableMovementAfterDelay(targetMovement, stunDuration));
-
-                    hitTarget = true;
-                    Debug.Log($"[Stun] Berhasil men-stun target! Sisa stack: {currentStacks}");
+                    Debug.Log("[Stun] Musuh berhasil di-stun!");
                     break;
                 }
             }
-        }
-
-        if (!hitTarget)
-        {
-            Debug.Log("[Stun] Tidak ada target dalam jangkauan!");
         }
     }
 
@@ -105,26 +98,6 @@ public class AbilityStun : NetworkBehaviour
         if (movementScript != null)
         {
             movementScript.enabled = true;
-            Debug.Log("[Stun] Efek stun pada target telah berakhir.");
         }
-    }
-
-    public void UpgradeSkill()
-    {
-        if (abilityLevel < 3)
-        {
-            abilityLevel++;
-            UpdateMaxStacks();
-            currentStacks = maxStacks;
-            Debug.Log("Ability Stun diupgrade ke level: " + abilityLevel + " | Max Stack: " + maxStacks);
-        }
-    }
-
-    private void OnDrawGizmosSelected()
-    {
-        Gizmos.color = new Color(0, 0, 1, 0.3f);
-        Gizmos.DrawSphere(transform.position, range);
-        Gizmos.color = Color.blue;
-        Gizmos.DrawWireSphere(transform.position, range);
     }
 }

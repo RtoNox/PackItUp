@@ -408,7 +408,10 @@ GameObject:
   - component: {fileID: -2901192063355772113}
   - component: {fileID: 6446947020523890436}
   - component: {fileID: 612234431940291023}
+  - component: {fileID: 5145043764894669988}
   - component: {fileID: 3858305257336768631}
+  - component: {fileID: -6375580035062565083}
+  - component: {fileID: 5928411088714904542}
   m_Layer: 0
   m_Name: Player
   m_TagString: Player
@@ -553,7 +556,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 3541218597
+  GlobalObjectIdHash: 641691081
   InScenePlacedSourceGlobalObjectIdHash: 3541218597
   m_InScenePlacedDisabledByDefault: 0
   DeferredDespawnTick: 0
@@ -708,6 +711,7 @@ MonoBehaviour:
   ShowTopMostFoldoutHeaderGroup: 1
   range: 2
   cooldownTime: 30
+  assignedKey: 102
   abilityLevel: 1
 --- !u!114 &612234431940291023
 MonoBehaviour:
@@ -725,6 +729,24 @@ MonoBehaviour:
   range: 2
   cooldownTime: 30
   stunDuration: 5
+  assignedKey: 114
+  abilityLevel: 1
+--- !u!114 &5145043764894669988
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7154400492277183936}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 934ce6630aaeb68468ea0b44f0bcdc6b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::AbilityJammer
+  ShowTopMostFoldoutHeaderGroup: 1
+  radius: 3.5
+  cooldownTime: 35
+  assignedKey: 114
   abilityLevel: 1
 --- !u!114 &3858305257336768631
 MonoBehaviour:
@@ -739,6 +761,38 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerAbilityManager
   ShowTopMostFoldoutHeaderGroup: 1
+--- !u!114 &-6375580035062565083
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7154400492277183936}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 110623a7eaa29814688315e90c6c7373, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::AbilityWarp
+  ShowTopMostFoldoutHeaderGroup: 1
+  assignedKey: 102
+  abilityLevel: 1
+--- !u!114 &5928411088714904542
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7154400492277183936}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e78984f1f07f67e49a46b81f2af4345d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::AbilityBehindYou
+  ShowTopMostFoldoutHeaderGroup: 1
+  searchRadius: 25
+  cooldownTime: 30
+  stunDuration: 0.3
+  assignedKey: 102
 --- !u!1 &8904885298641192656
 GameObject:
   m_ObjectHideFlags: 0

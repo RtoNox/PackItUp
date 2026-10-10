@@ -10,6 +10,9 @@ public class AbilitySteal : NetworkBehaviour
     public float cooldownTime = 30f;
     private float lastUseTime = -999f;
 
+    [Header("Input Settings")]
+    public KeyCode assignedKey = KeyCode.F;
+
     [Header("Upgrade Settings")]
     [Range(1, 3)] public int abilityLevel = 1;
 
@@ -28,10 +31,8 @@ public class AbilitySteal : NetworkBehaviour
     {
         if (!IsOwner) return;
 
-
-        if (Input.GetKeyDown(KeyCode.Space))
+        if (Input.GetKeyDown(assignedKey))
         {
-            Debug.Log("[Test] Tombol Space ditekan! Mencoba menggunakan Steal.");
             TryUseStealServerRpc();
         }
     }
@@ -65,42 +66,10 @@ public class AbilitySteal : NetworkBehaviour
 
                         lastUseTime = Time.time;
                         Debug.Log($"[Steal] Berhasil mencuri {stolenScore} poin!");
-                        
-                        ClientRpcParams clientRpcParams = new ClientRpcParams
-                        {
-                            Send = new ClientRpcSendParams { TargetClientIds = new[] { OwnerClientId } }
-                        };
-                        NotifyStealSuccessClientRpc(stolenScore, clientRpcParams);
                         break;
                     }
                 }
             }
         }
-    }
-
-    [ClientRpc]
-    private void NotifyStealSuccessClientRpc(int stolenScore, ClientRpcParams clientRpcParams = default)
-    {
-        if (IsOwner)
-        {
-            Debug.Log($"BERHASIL! Anda mencuri {stolenScore} poin dari musuh.");
-        }
-    }
-
-    public void UpgradeSkill()
-    {
-        if (abilityLevel < 3)
-        {
-            abilityLevel++;
-            Debug.Log("Ability Steal diupgrade ke level: " + abilityLevel);
-        }
-    }
-
-    private void OnDrawGizmosSelected()
-    {
-        Gizmos.color = new Color(0, 1, 0, 0.3f);
-        Gizmos.DrawSphere(transform.position, range);
-        Gizmos.color = Color.green;
-        Gizmos.DrawWireSphere(transform.position, range);
     }
 }
