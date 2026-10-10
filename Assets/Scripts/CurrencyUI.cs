@@ -8,10 +8,10 @@ public class CurrencyDisplay : MonoBehaviour
 
     private void Start()
     {
-        UpdateDisplay();
+        UpdateCurrencyDisplay();
     }
 
-    public void UpdateDisplay()
+    public void UpdateCurrencyDisplay()
     {
         int amount = CurrencyManager.Instance.GetBalance(currency);
         amountText.text = amount.ToString();
