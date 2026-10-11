@@ -3,6 +3,8 @@ using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 using System.Collections;
 using System.Collections.Generic;
+using TMPro;
+
 
 public enum MenuState
 {
@@ -22,6 +24,8 @@ public class GameManager : MonoBehaviour
     public Button menuToMainMenuButt;
     public Button returnToGameButt;
 
+    [SerializeField] private TMP_Text time;
+
     public static GameManager instance;
     public MenuState currentState { get; private set; }
 
@@ -36,6 +40,8 @@ public class GameManager : MonoBehaviour
     private void Update()
     {
         roundTime -= Time.deltaTime;
+
+        time.text = roundTime.ToString("0");
 
         if(roundTime <= 0)
         {
