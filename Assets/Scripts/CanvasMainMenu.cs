@@ -78,7 +78,7 @@ public class CanvasMainMenu : MonoBehaviour
         }
     }
 
-    // Shortcut fungsi untuk tombol UI di Main Menu Inspector
+  
     public void SelectSteal() { OnSelectSkill("Steal"); }
     public void SelectStun() { OnSelectSkill("Stun"); }
     public void SelectJammer() { OnSelectSkill("Jammer"); }

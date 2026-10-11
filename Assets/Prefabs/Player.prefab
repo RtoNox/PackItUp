@@ -774,8 +774,13 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::AbilityWarp
   ShowTopMostFoldoutHeaderGroup: 1
+  cooldownTime: 45
+  selectionTimeLimit: 3
   assignedKey: 102
-  abilityLevel: 1
+  mazeMinX: -65
+  mazeMaxX: 65
+  mazeMinZ: -65
+  mazeMaxZ: 65
 --- !u!114 &5928411088714904542
 MonoBehaviour:
   m_ObjectHideFlags: 0

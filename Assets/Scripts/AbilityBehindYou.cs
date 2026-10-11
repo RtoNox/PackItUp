@@ -6,9 +6,9 @@ using Unity.Netcode;
 public class AbilityBehindYou : NetworkBehaviour
 {
     [Header("Ability Stats")]
-    public float searchRadius = 25f; // Jarak maksimum untuk mencari target acak
+    public float searchRadius = 25f;
     public float cooldownTime = 30f;
-    public float stunDuration = 0.3f; // Diperbaiki dari 0.3s menjadi 0.3f
+    public float stunDuration = 0.3f; 
     
     [Header("Input Settings")]
     public KeyCode assignedKey = KeyCode.F;
@@ -34,13 +34,12 @@ public class AbilityBehindYou : NetworkBehaviour
             return;
         }
 
-        // Cari semua objek player di sekitar
+      
         Collider[] hitColliders = Physics.OverlapSphere(transform.position, searchRadius);
         List<Transform> validTargets = new List<Transform>();
 
         foreach (var hit in hitColliders)
         {
-            // Pastikan bukan diri sendiri dan merupakan player
             if (hit.gameObject != gameObject && hit.CompareTag("Player"))
             {
                 validTargets.Add(hit.transform);
@@ -53,14 +52,14 @@ public class AbilityBehindYou : NetworkBehaviour
             return;
         }
 
-        // Pilih satu target secara acak dari daftar musuh yang ditemukan
+
         Transform randomTarget = validTargets[Random.Range(0, validTargets.Count)];
 
-        // Hitung posisi 0.5 unit tepat di belakang musuh (-forward target)
+  
         Vector3 targetBehindPos = randomTarget.position - (randomTarget.forward * 0.5f);
-        targetBehindPos.y = randomTarget.position.y; // Menjaga ketinggian player tetap sejajar
+        targetBehindPos.y = randomTarget.position.y;
 
-        // Eksekusi teleportasi player pengguna skill
+       
         CharacterController charController = GetComponent<CharacterController>();
         Rigidbody rb = GetComponent<Rigidbody>();
 
@@ -80,7 +79,7 @@ public class AbilityBehindYou : NetworkBehaviour
             transform.position = targetBehindPos;
         }
 
-        // Hadapkan player ke arah punggung musuh (menghadap ke musuh)
+        
         Vector3 lookDirection = (randomTarget.position - transform.position);
         lookDirection.y = 0;
         if (lookDirection != Vector3.zero)
@@ -88,7 +87,7 @@ public class AbilityBehindYou : NetworkBehaviour
             transform.rotation = Quaternion.LookRotation(lookDirection);
         }
 
-        // Berikan efek stun sementara pada target
+   
         PlayerMovement targetMovement = randomTarget.GetComponent<PlayerMovement>();
         if (targetMovement != null)
         {
