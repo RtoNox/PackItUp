@@ -24,7 +24,13 @@ public class GameManager : MonoBehaviour
     public Button menuToMainMenuButt;
     public Button returnToGameButt;
 
+    [SerializeField] private TextMeshProUGUI rank1Text;
+    [SerializeField] private TextMeshProUGUI rank2Text;
+    [SerializeField] private TextMeshProUGUI rank3Text;
+    [SerializeField] private TextMeshProUGUI rank4Text;
+
     [SerializeField] private TMP_Text time;
+    [SerializeField] private PointCalculator pointCalculator;
 
     public static GameManager instance;
     public MenuState currentState { get; private set; }
@@ -37,6 +43,23 @@ public class GameManager : MonoBehaviour
         ChangeToGameScreen();
     }
 
+    public void ShowResults(List<PlayerResult> results)
+    {
+        TextMeshProUGUI[] rankTexts =
+        {
+            rank1Text,
+            rank2Text,
+            rank3Text,
+            rank4Text
+        };
+
+        for (int i = 0; i < results.Count && i < rankTexts.Length; i++)
+        {
+            rankTexts[i].text = $"{results[i].rank}. Player {results[i].clientId}, {results[i].points} Points";
+        }
+    }
+
+
     private void Update()
     {
         roundTime -= Time.deltaTime;
@@ -45,6 +68,8 @@ public class GameManager : MonoBehaviour
 
         if(roundTime <= 0)
         {
+            List<PlayerResult> results = pointCalculator.CalculateRankings();
+            ShowResults(results);
             ChangeToEndScreen();
         }
 
