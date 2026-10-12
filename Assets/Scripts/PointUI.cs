@@ -1,57 +1,41 @@
-// using UnityEngine;
-// using TMPro;
-// using Unity.Netcode;
-// using System.Collections;
+using UnityEngine;
+using TMPro;
+using Unity.Netcode;
+using System.Collections;
 
-// public class PointUI : MonoBehaviour
-// {
-//     [SerializeField] private TextMeshProUGUI pointText;
+public class PointUI : MonoBehaviour
+{
+    [SerializeField] private TextMeshProUGUI pointText;
 
-//     private PlayerPoints localPlayer;
+    private PlayerPoints localPlayer;
 
-//     private void Start()
-//     {
-//         StartCoroutine(WaitForPlayer());
-//     }
+    private void Start()
+    {
+        StartCoroutine(WaitForPlayer());
+    }
 
+    private IEnumerator WaitForPlayer()
+    {
+    while (NetworkManager.Singleton.LocalClient?.PlayerObject == null)
+        yield return null;
 
-//     private IEnumerator WaitForPlayer()
-// {
-//     while (localPlayer == null)
-//     {
-//         PlayerPoints[] players =
-//             FindObjectsOfType<PlayerPoints>();
+    localPlayer = NetworkManager.Singleton.LocalClient.PlayerObject.GetComponent<PlayerPoints>();
 
-//         foreach (PlayerPoints p in players)
-//         {
-//             if (players.IsOwner)
-//             {
-//                 localPlayer = players;
-//                 break;
-//             }
-//         }
+    UpdateUI(localPlayer.Points.Value,localPlayer.Points.Value);
 
-//         yield return null;
-//     }
+    localPlayer.Points.OnValueChanged += UpdateUI;
+    }
 
-//     UpdateUI(
-//         localPlayer.Points.Value,
-//         localPlayer.Points.Value
-//      );
+    private void UpdateUI(int oldValue, int newValue)
+    {
+        pointText.text = "Point: " + newValue;
+    }
 
-//     localPlayer.Points.OnValueChanged += UpdateUI;
-// }
-
-//     private void UpdateUI(int oldValue, int newValue)
-//     {
-//         pointText.text = "Point: " + newValue;
-//     }
-
-//     private void OnDestroy()
-//     {
-//         if (localPlayer != null)
-//         {
-//             localPlayer.Points.OnValueChanged -= UpdateUI;
-//         }
-//     }
-// }
+    private void OnDestroy()
+    {
+        if (localPlayer != null)
+        {
+            localPlayer.Points.OnValueChanged -= UpdateUI;
+        }
+    }
+}
