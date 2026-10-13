@@ -8,13 +8,14 @@ public class AbilityWarp : NetworkBehaviour
 {
     [Header("Ability Stats")]
     public float cooldownTime = 45f;
-    public float selectionTimeLimit = 3f;
+    public float selectionTimeLimit = 3f; 
     private float lastUseTime = -999f;
+    private bool wasOnCooldown = false;
 
     [Header("Input Settings")]
     public KeyCode assignedKey = KeyCode.F;
 
-    [Header("Maze World Boundaries (Sesuaikan dengan tembok terluar asli: -50 sampai 50)")]
+    [Header("Maze World Boundaries")]
     public float mazeMinX = -50f;
     public float mazeMaxX = 50f;
     public float mazeMinZ = -50f;
@@ -24,10 +25,16 @@ public class AbilityWarp : NetworkBehaviour
     private bool isSelectingLocation = false;
     private float selectionTimer = 0f;
 
+    public float GetRemainingCooldown()
+    {
+        float timeSinceLastUse = Time.time - lastUseTime;
+        float remaining = cooldownTime - timeSinceLastUse;
+        return remaining > 0f ? remaining : 0f;
+    }
+
     void Start()
     {
         if (!IsOwner) return;
-
         StartCoroutine(SetupWarpUIAsync());
     }
 
@@ -53,7 +60,6 @@ public class AbilityWarp : NetworkBehaviour
         panelObj.transform.SetParent(canvasObj.transform, false);
         
         Image panelImage = panelObj.AddComponent<Image>();
-        
         Sprite mapSprite = Resources.Load<Sprite>("MapImage"); 
         if (mapSprite != null)
         {
@@ -62,7 +68,6 @@ public class AbilityWarp : NetworkBehaviour
         else
         {
             panelImage.color = new Color(0, 0.5f, 0, 0.8f);
-            Debug.LogWarning("[Warp] Sprite 'MapImage' tidak ditemukan di folder Resources!");
         }
 
         RectTransform rectTransform = panelObj.GetComponent<RectTransform>();
@@ -77,9 +82,17 @@ public class AbilityWarp : NetworkBehaviour
     {
         if (!IsOwner) return;
 
+        bool isOnCooldown = Time.time < lastUseTime + cooldownTime;
+
+        if (wasOnCooldown && !isOnCooldown)
+        {
+            Debug.Log("[Warp] Cooldown selesai! Ability Warp siap dipakai kembali.");
+        }
+        wasOnCooldown = isOnCooldown;
+
         if (Input.GetKeyDown(assignedKey))
         {
-            if (Time.time < lastUseTime + cooldownTime)
+            if (isOnCooldown)
             {
                 Debug.Log("[Warp] Skill masih cooldown!");
                 return;
@@ -99,11 +112,8 @@ public class AbilityWarp : NetworkBehaviour
 
         if (mapPanelInstance != null) mapPanelInstance.SetActive(true);
 
-        // Bebaskan kursor mouse agar bisa dipakai memilih peta
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
-
-        Debug.Log("[Warp] Panel map terbuka. Silakan klik area peta tujuan dalam 3 detik...");
 
         Vector3 selectedTargetPosition = Vector3.zero;
         bool hasChosenPosition = false;
@@ -152,7 +162,9 @@ public class AbilityWarp : NetworkBehaviour
         }
         else
         {
+            
             lastUseTime = Time.time;
+            wasOnCooldown = true;
             Debug.Log("[Warp] Gagal memilih tempat dalam 3 detik! Skill dibatalkan dan masuk cooldown.");
         }
 
@@ -178,7 +190,6 @@ public class AbilityWarp : NetworkBehaviour
         }
 
         CharacterController charController = GetComponent<CharacterController>();
-
         if (charController != null) charController.enabled = false;
 
         transform.position = targetPosition;
@@ -186,6 +197,17 @@ public class AbilityWarp : NetworkBehaviour
         if (charController != null) charController.enabled = true;
 
         lastUseTime = Time.time;
+        TriggerCooldownClientRpc(Time.time);
         Debug.Log($"[Warp] Berhasil warp ke koordinat aman: {targetPosition}");
+    }
+
+    [ClientRpc]
+    private void TriggerCooldownClientRpc(float serverTime)
+    {
+        if (IsOwner)
+        {
+            lastUseTime = serverTime;
+            wasOnCooldown = true;
+        }
     }
 }

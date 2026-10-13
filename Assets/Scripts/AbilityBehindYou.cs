@@ -6,21 +6,40 @@ using Unity.Netcode;
 public class AbilityBehindYou : NetworkBehaviour
 {
     [Header("Ability Stats")]
-    public float searchRadius = 25f;
-    public float cooldownTime = 30f;
-    public float stunDuration = 0.3f; 
-    
-    [Header("Input Settings")]
-    public KeyCode assignedKey = KeyCode.F;
-
+    public float cooldownTime = 40f;
     private float lastUseTime = -999f;
+    private bool wasOnCooldown = false;
+
+    [Header("Input Settings")]
+    public KeyCode assignedKey = KeyCode.R; 
+
+    public float GetRemainingCooldown()
+    {
+        float timeSinceLastUse = Time.time - lastUseTime;
+        float remaining = cooldownTime - timeSinceLastUse;
+        return remaining > 0f ? remaining : 0f;
+    }
 
     void Update()
     {
         if (!IsOwner) return;
 
+        bool isOnCooldown = Time.time < lastUseTime + cooldownTime;
+
+        if (wasOnCooldown && !isOnCooldown)
+        {
+            Debug.Log("[BehindYou] Cooldown selesai! Ability Behind You siap dipakai kembali.");
+        }
+        wasOnCooldown = isOnCooldown;
+
         if (Input.GetKeyDown(assignedKey))
         {
+            if (isOnCooldown)
+            {
+                Debug.Log("[BehindYou] Skill masih cooldown!");
+                return;
+            }
+
             TryUseBehindYouServerRpc();
         }
     }
@@ -30,81 +49,62 @@ public class AbilityBehindYou : NetworkBehaviour
     {
         if (Time.time < lastUseTime + cooldownTime)
         {
-            Debug.Log("[Behind You] Skill masih cooldown!");
             return;
         }
 
-      
-        Collider[] hitColliders = Physics.OverlapSphere(transform.position, searchRadius);
-        List<Transform> validTargets = new List<Transform>();
+        bool success = false;
+        GameObject targetPlayer = null;
+        float shortestDistance = Mathf.Infinity;
 
+        Collider[] hitColliders = Physics.OverlapSphere(transform.position, 20f); // Radius pencarian target
         foreach (var hit in hitColliders)
         {
             if (hit.gameObject != gameObject && hit.CompareTag("Player"))
             {
-                validTargets.Add(hit.transform);
+                float distance = Vector3.Distance(transform.position, hit.transform.position);
+                if (distance < shortestDistance)
+                {
+                    shortestDistance = distance;
+                    targetPlayer = hit.gameObject;
+                }
             }
         }
 
-        if (validTargets.Count == 0)
+        if (targetPlayer != null)
         {
-            Debug.Log("[Behind You] Tidak ada target musuh di sekitar!");
-            return;
+            Vector3 targetPosition = targetPlayer.transform.position - (targetPlayer.transform.forward * 1.5f);
+            targetPosition.y = targetPlayer.transform.position.y;
+
+            CharacterController charController = GetComponent<CharacterController>();
+            if (charController != null) charController.enabled = false;
+
+            transform.position = targetPosition;
+            transform.LookAt(targetPlayer.transform);
+
+            if (charController != null) charController.enabled = true;
+
+            Debug.Log($"[BehindYou] Berhasil berpindah ke belakang player {targetPlayer.name}!");
+            success = true;
         }
 
-
-        Transform randomTarget = validTargets[Random.Range(0, validTargets.Count)];
-
-  
-        Vector3 targetBehindPos = randomTarget.position - (randomTarget.forward * 0.5f);
-        targetBehindPos.y = randomTarget.position.y;
-
-       
-        CharacterController charController = GetComponent<CharacterController>();
-        Rigidbody rb = GetComponent<Rigidbody>();
-
-        if (charController != null)
+        if (success)
         {
-            charController.enabled = false;
-            transform.position = targetBehindPos;
-            charController.enabled = true;
-        }
-        else if (rb != null)
-        {
-            rb.position = targetBehindPos;
-            rb.MovePosition(targetBehindPos);
+            lastUseTime = Time.time;
+            TriggerCooldownClientRpc(Time.time);
         }
         else
         {
-            transform.position = targetBehindPos;
+            Debug.Log("[BehindYou] Tidak ada target player lain di dekat Anda! Skill tidak masuk cooldown.");
         }
-
-        
-        Vector3 lookDirection = (randomTarget.position - transform.position);
-        lookDirection.y = 0;
-        if (lookDirection != Vector3.zero)
-        {
-            transform.rotation = Quaternion.LookRotation(lookDirection);
-        }
-
-   
-        PlayerMovement targetMovement = randomTarget.GetComponent<PlayerMovement>();
-        if (targetMovement != null)
-        {
-            targetMovement.enabled = false;
-            StartCoroutine(EnableTargetMovementAfterDelay(targetMovement, stunDuration));
-        }
-
-        lastUseTime = Time.time;
-        Debug.Log($"[Behind You] Berhasil teleport ke belakang musuh dan memberikan stun selama {stunDuration} detik!");
     }
 
-    private IEnumerator EnableTargetMovementAfterDelay(PlayerMovement movementScript, float delay)
+    [ClientRpc]
+    private void TriggerCooldownClientRpc(float serverTime)
     {
-        yield return new WaitForSeconds(delay);
-        if (movementScript != null)
+        if (IsOwner)
         {
-            movementScript.enabled = true;
+            lastUseTime = serverTime;
+            wasOnCooldown = true;
         }
     }
 }

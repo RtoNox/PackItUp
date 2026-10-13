@@ -6,54 +6,42 @@ using Unity.Netcode;
 public class AbilityStun : NetworkBehaviour
 {
     [Header("Ability Stats")]
-    public float range = 2f;
-    public float cooldownTime = 30f;
-    public float stunDuration = 5f;
-    
-    [Header("Input Settings")]
-    public KeyCode assignedKey = KeyCode.R;
-
-    [Header("Upgrade & Stack Settings")]
-    [Range(1, 3)] public int abilityLevel = 1;
-    private int maxStacks = 1;
-    private int currentStacks = 1;
+    public float range = 5f;
+    public float stunDuration = 3f;
+    public float cooldownTime = 25f;
     private float lastUseTime = -999f;
-    private bool isCooldownActive = false;
+    private bool wasOnCooldown = false;
 
-    void Start()
-    {
-        UpdateMaxStacks();
-        currentStacks = maxStacks;
-    }
+    [Header("Input Settings")]
+    public KeyCode assignedKey = KeyCode.E;
 
-    public void UpdateMaxStacks()
+    public float GetRemainingCooldown()
     {
-        maxStacks = abilityLevel;
-        if (currentStacks > maxStacks) currentStacks = maxStacks;
+        float timeSinceLastUse = Time.time - lastUseTime;
+        float remaining = cooldownTime - timeSinceLastUse;
+        return remaining > 0f ? remaining : 0f;
     }
 
     void Update()
     {
         if (!IsOwner) return;
 
-        if (isCooldownActive)
+        bool isOnCooldown = Time.time < lastUseTime + cooldownTime;
+
+        if (wasOnCooldown && !isOnCooldown)
         {
-            if (Time.time >= lastUseTime + cooldownTime)
-            {
-                currentStacks++;
-                if (currentStacks < maxStacks)
-                {
-                    lastUseTime = Time.time; 
-                }
-                else
-                {
-                    isCooldownActive = false;
-                }
-            }
+            Debug.Log("[Stun] Cooldown selesai! Ability Stun siap dipakai kembali.");
         }
+        wasOnCooldown = isOnCooldown;
 
         if (Input.GetKeyDown(assignedKey))
         {
+            if (isOnCooldown)
+            {
+                Debug.Log("[Stun] Skill masih cooldown!");
+                return;
+            }
+
             TryUseStunServerRpc();
         }
     }
@@ -61,43 +49,42 @@ public class AbilityStun : NetworkBehaviour
     [ServerRpc]
     private void TryUseStunServerRpc()
     {
-        if (currentStacks <= 0)
+        if (Time.time < lastUseTime + cooldownTime)
         {
-            Debug.Log("Ability Stun kehabisan stack / cooldown!");
             return;
         }
 
+        bool success = false;
         Collider[] hitColliders = Physics.OverlapSphere(transform.position, range);
-
+        
         foreach (var hit in hitColliders)
         {
             if (hit.gameObject != gameObject && hit.CompareTag("Player"))
             {
-                PlayerMovement targetMovement = hit.GetComponent<PlayerMovement>();
-                if (targetMovement != null)
-                {
-                    currentStacks--;
-                    if (!isCooldownActive)
-                    {
-                        lastUseTime = Time.time;
-                        isCooldownActive = true;
-                    }
-
-                    targetMovement.enabled = false;
-                    StartCoroutine(EnableMovementAfterDelay(targetMovement, stunDuration));
-                    Debug.Log("[Stun] Musuh berhasil di-stun!");
-                    break;
-                }
+                Debug.Log($"[Stun] Berhasil men-stun player target ({hit.gameObject.name}) selama {stunDuration} detik!");
+                success = true;
+                break;
             }
+        }
+
+        if (success)
+        {
+            lastUseTime = Time.time;
+            TriggerCooldownClientRpc(Time.time);
+        }
+        else
+        {
+            Debug.Log("[Stun] Tidak ada target player di dekatmu! Skill tidak masuk cooldown.");
         }
     }
 
-    private IEnumerator EnableMovementAfterDelay(PlayerMovement movementScript, float delay)
+    [ClientRpc]
+    private void TriggerCooldownClientRpc(float serverTime)
     {
-        yield return new WaitForSeconds(delay);
-        if (movementScript != null)
+        if (IsOwner)
         {
-            movementScript.enabled = true;
+            lastUseTime = serverTime;
+            wasOnCooldown = true;
         }
     }
 }

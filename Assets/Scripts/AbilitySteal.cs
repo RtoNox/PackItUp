@@ -9,6 +9,7 @@ public class AbilitySteal : NetworkBehaviour
     public float range = 2f;
     public float cooldownTime = 30f;
     private float lastUseTime = -999f;
+    private bool wasOnCooldown = false;
 
     [Header("Input Settings")]
     public KeyCode assignedKey = KeyCode.F;
@@ -27,12 +28,33 @@ public class AbilitySteal : NetworkBehaviour
         }
     }
 
+    public float GetRemainingCooldown()
+    {
+        float timeSinceLastUse = Time.time - lastUseTime;
+        float remaining = cooldownTime - timeSinceLastUse;
+        return remaining > 0f ? remaining : 0f;
+    }
+
     void Update()
     {
         if (!IsOwner) return;
 
+        bool isOnCooldown = Time.time < lastUseTime + cooldownTime;
+
+        if (wasOnCooldown && !isOnCooldown)
+        {
+            Debug.Log("[Steal] Cooldown selesai! Ability Steal siap dipakai kembali.");
+        }
+        wasOnCooldown = isOnCooldown;
+
         if (Input.GetKeyDown(assignedKey))
         {
+            if (isOnCooldown)
+            {
+                Debug.Log("Ability Steal masih cooldown!");
+                return;
+            }
+
             TryUseStealServerRpc();
         }
     }
@@ -40,13 +62,15 @@ public class AbilitySteal : NetworkBehaviour
     [ServerRpc]
     private void TryUseStealServerRpc()
     {
+        // Proteksi tambahan di server
         if (Time.time < lastUseTime + cooldownTime)
         {
-            Debug.Log("Ability Steal masih cooldown!");
             return;
         }
 
+        bool success = false;
         Collider[] hitColliders = Physics.OverlapSphere(transform.position, range);
+        
         foreach (var hit in hitColliders)
         {
             if (hit.gameObject != gameObject && hit.CompareTag("Player"))
@@ -64,12 +88,34 @@ public class AbilitySteal : NetworkBehaviour
                         targetPoints.Points.Value -= stolenScore;
                         myPoints.Points.Value += stolenScore;
 
-                        lastUseTime = Time.time;
                         Debug.Log($"[Steal] Berhasil mencuri {stolenScore} poin!");
+                        success = true;
                         break;
                     }
                 }
             }
+        }
+
+        // Cooldown HANYA aktif jika skill berhasil mengenai target dan mencuri poin
+        if (success)
+        {
+            lastUseTime = Time.time;
+            
+            TriggerCooldownClientRpc(Time.time);
+        }
+        else
+        {
+            Debug.Log("[Steal] Tidak ada target valid di sekitar! Skill tidak masuk cooldown.");
+        }
+    }
+
+    [ClientRpc]
+    private void TriggerCooldownClientRpc(float serverTime)
+    {
+        if (IsOwner)
+        {
+            lastUseTime = serverTime;
+            wasOnCooldown = true;
         }
     }
 }
