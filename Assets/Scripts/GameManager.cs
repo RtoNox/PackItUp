@@ -86,7 +86,7 @@ public class GameManager : MonoBehaviour
             ChangeToEndScreen();
         }
 
-        /*if (Input.GetKeyDown(KeyCode.Escape))
+        if (Input.GetKeyDown(KeyCode.Escape))
         {
             if (currentState == MenuState.GameScreen)
             {
@@ -98,7 +98,7 @@ public class GameManager : MonoBehaviour
                 ChangeState(MenuState.GameScreen);
                 DisableAllButton();
             }
-        }*/
+        }
     }
     
     public void ChangeState(MenuState newState)
@@ -152,6 +152,7 @@ public class GameManager : MonoBehaviour
             case MenuState.EndScreen:
                 Time.timeScale = 0;
                 endScreenUI.SetActive(true);
+                EnableEndButton();
                 break;
             case MenuState.GameMenuScreen:
                 Time.timeScale = 1;
