@@ -500,7 +500,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 3888416660
+  GlobalObjectIdHash: 3541218597
   InScenePlacedSourceGlobalObjectIdHash: 3541218597
   m_InScenePlacedDisabledByDefault: 0
   DeferredDespawnTick: 0
@@ -748,8 +748,8 @@ Animator:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 7154400492277183936}
-  m_Enabled: 1
-  m_Avatar: {fileID: 0}
+  m_Enabled: 0
+  m_Avatar: {fileID: 9000000, guid: 0be0966572bd2734c9e16ab8abcb3207, type: 3}
   m_Controller: {fileID: 9100000, guid: d664578fa081ff0468544b5ae7e71f59, type: 2}
   m_CullingMode: 0
   m_UpdateMode: 0
