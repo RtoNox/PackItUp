@@ -18,7 +18,6 @@ public class PlayerMovement : NetworkBehaviour
 
     [Header("References")]
     [SerializeField] private Transform cameraTransform;
-    [SerializeField] private PlayerAnimation playerAnimation;
 
     public float CurrentStamina => currentStamina;
     public float MaxStamina => maxStamina;
@@ -62,12 +61,6 @@ public class PlayerMovement : NetworkBehaviour
 
         Vector3 moveDirection = (camForward * vertical + camRight * horizontal).normalized;
         bool isMoving = moveDirection.magnitude > 0.1f;
-
-        Debug.Log("PlayerMovement isMoving: " + isMoving);
-        Debug.Log("PlayerAnimation found: " + (playerAnimation != null));
-
-        if (playerAnimation != null)
-            playerAnimation.SetRunning(isMoving);
 
         isSprinting = wantsToSprint && isMoving && currentStamina > 0f;
 
