@@ -3,32 +3,29 @@ using UnityEngine;
 
 public class PlayerAnimation : MonoBehaviour
 {
-    [SerializeField] private Animator animator;
+    public Animator animator;
+    public float movementThreshold = 0.1f;
 
-    void Awake()
+    void Update()
     {
-        if (animator == null)
-        {
-            animator = GetComponentInChildren<Animator>();
-        }
-    }
+        // Get the player's movement speed
+        Vector3 velocity = Vector3.zero;
 
-    
-    public void SetRunning(bool running)
-    {
-        if (animator == null)
+        CharacterController controller =
+            GetComponentInParent<CharacterController>();
+
+        if (controller != null)
         {
-            Debug.LogError("Animator reference is missing!");
-            return;
+            velocity = controller.velocity;
         }
 
-        animator.SetBool("IsRunning", running);
+        // Check if the player is moving horizontally
+        Vector3 horizontalVelocity =
+            new Vector3(velocity.x, 0, velocity.z);
 
-        Debug.Log(
-            "Animator: " + animator.gameObject.name +
-            " | Controller: " + animator.runtimeAnimatorController.name +
-            " | IsRunning: " + animator.GetBool("IsRunning")
-        );
+        bool isRunning =
+            horizontalVelocity.magnitude > movementThreshold;
+
+        animator.SetBool("IsRunning", isRunning);
     }
-
 }

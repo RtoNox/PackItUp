@@ -10585,7 +10585,7 @@ MonoBehaviour:
     type: 3}
   time: {fileID: 353979244}
   pointCalculator: {fileID: 414120572}
-  roundTime: 300
+  roundTime: 10
 --- !u!4 &1909825001
 Transform:
   m_ObjectHideFlags: 0
