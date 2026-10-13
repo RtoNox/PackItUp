@@ -2,6 +2,7 @@ using System;
 using UnityEngine;
 using Unity.Netcode;
 
+[RequireComponent(typeof(Animator))]
 public class PlayerMovement : NetworkBehaviour
 {
     [Header("Movement Settings")]
@@ -18,6 +19,11 @@ public class PlayerMovement : NetworkBehaviour
 
     [Header("References")]
     [SerializeField] private Transform cameraTransform;
+    [SerializeField] private Animator animator;
+
+    // Animator parameter hashes
+    private static readonly int SpeedHash = Animator.StringToHash("Speed");
+    private static readonly int IsRunningHash = Animator.StringToHash("IsRunning");
 
     public float CurrentStamina => currentStamina;
     public float MaxStamina => maxStamina;
@@ -31,6 +37,12 @@ public class PlayerMovement : NetworkBehaviour
     private bool isSprinting;
     private float regenDelayTimer;
 
+    void Awake()
+    {
+        if (animator == null)
+            animator = GetComponent<Animator>();
+    }
+
     void Start()
     {
         controller = GetComponent<CharacterController>();
@@ -43,7 +55,11 @@ public class PlayerMovement : NetworkBehaviour
 
     public override void OnNetworkSpawn()
     {
-        if(!IsOwner) Destroy(this);
+        if (!IsOwner)
+        {
+            if (animator != null) animator.enabled = false;
+            Destroy(this);
+        }
     }
 
     void Update()
@@ -51,6 +67,9 @@ public class PlayerMovement : NetworkBehaviour
         float horizontal = Input.GetAxisRaw("Horizontal");
         float vertical = Input.GetAxisRaw("Vertical");
         bool wantsToSprint = Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);
+
+        // WASD input detection
+        bool hasMoveInput = Mathf.Abs(horizontal) > 0.1f || Mathf.Abs(vertical) > 0.1f;
 
         Vector3 camForward = cameraTransform.forward;
         Vector3 camRight = cameraTransform.right;
@@ -60,9 +79,9 @@ public class PlayerMovement : NetworkBehaviour
         camRight.Normalize();
 
         Vector3 moveDirection = (camForward * vertical + camRight * horizontal).normalized;
-        bool isMoving = moveDirection.magnitude > 0.1f;
 
-        isSprinting = wantsToSprint && isMoving && currentStamina > 0f;
+        // Sprint only if input is held AND there is movement AND stamina remains
+        isSprinting = wantsToSprint && hasMoveInput && currentStamina > 0f;
 
         if (isSprinting)
         {
@@ -85,7 +104,7 @@ public class PlayerMovement : NetworkBehaviour
 
         float currentSpeed = isSprinting ? sprintSpeed : walkSpeed;
 
-        if (isMoving)
+        if (hasMoveInput)
         {
             controller.Move(moveDirection * currentSpeed * Time.deltaTime);
 
@@ -99,5 +118,10 @@ public class PlayerMovement : NetworkBehaviour
 
         velocity.y += gravity * Time.deltaTime;
         controller.Move(velocity * Time.deltaTime);
+
+        // ---- Animation Parameters ----
+        // If WASD is pressed → play run animation
+        // If no WASD input → stop and return to idle
+        animator.SetBool(IsRunningHash, hasMoveInput);
     }
 }
