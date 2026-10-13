@@ -19,7 +19,6 @@ public class PlayerMovement : NetworkBehaviour
 
     [Header("References")]
     [SerializeField] private Transform cameraTransform;
-<<<<<<< HEAD
 <<<<<<< Updated upstream
     [SerializeField] private PlayerAnimation playerAnimation;
 =======
@@ -29,8 +28,6 @@ public class PlayerMovement : NetworkBehaviour
     private static readonly int SpeedHash = Animator.StringToHash("Speed");
     private static readonly int IsRunningHash = Animator.StringToHash("IsRunning");
 >>>>>>> Stashed changes
-=======
->>>>>>> parent of fa276b3 (slight change in model)
 
     public float CurrentStamina => currentStamina;
     public float MaxStamina => maxStamina;
@@ -87,7 +84,6 @@ public class PlayerMovement : NetworkBehaviour
 
         Vector3 moveDirection = (camForward * vertical + camRight * horizontal).normalized;
 
-<<<<<<< HEAD
 <<<<<<< Updated upstream
         Debug.Log("PlayerMovement isMoving: " + isMoving);
         Debug.Log("PlayerAnimation found: " + (playerAnimation != null));
@@ -95,8 +91,6 @@ public class PlayerMovement : NetworkBehaviour
         if (playerAnimation != null)
             playerAnimation.SetRunning(isMoving);
 
-=======
->>>>>>> parent of fa276b3 (slight change in model)
         isSprinting = wantsToSprint && isMoving && currentStamina > 0f;
 =======
         // Sprint only if input is held AND there is movement AND stamina remains
