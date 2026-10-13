@@ -207,7 +207,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 3, z: 1}
+  m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 1185570936}
@@ -2805,7 +2805,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &552994857
 RectTransform:
   m_ObjectHideFlags: 0
@@ -10574,17 +10574,18 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 34d9c50d205ecca4088cd9b30a968ad5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GameManager
-  gameScreenUI: {fileID: 0}
-  endScreenUI: {fileID: 0}
-  gameMenuScreenUI: {fileID: 0}
-  endToMainMenuButt: {fileID: 0}
-  menuToMainMenuButt: {fileID: 0}
-  returnToGameButt: {fileID: 0}
-  leaderboardContainer: {fileID: 0}
-  entryPrefab: {fileID: 0}
-  time: {fileID: 0}
-  pointCalculator: {fileID: 0}
-  roundTime: 180
+  gameScreenUI: {fileID: 1248226624}
+  endScreenUI: {fileID: 552994856}
+  gameMenuScreenUI: {fileID: 2105935199}
+  endToMainMenuButt: {fileID: 206383029}
+  menuToMainMenuButt: {fileID: 1326544966}
+  returnToGameButt: {fileID: 86735018}
+  leaderboardContainer: {fileID: 609970020}
+  entryPrefab: {fileID: 8874804361342488036, guid: 4316579d49c468443b0b13ce109e6447,
+    type: 3}
+  time: {fileID: 353979244}
+  pointCalculator: {fileID: 414120572}
+  roundTime: 300
 --- !u!4 &1909825001
 Transform:
   m_ObjectHideFlags: 0
@@ -10710,7 +10711,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &1967495195
 RectTransform:
   m_ObjectHideFlags: 0
@@ -11032,7 +11033,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &2105935200
 RectTransform:
   m_ObjectHideFlags: 0
