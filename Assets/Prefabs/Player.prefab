@@ -500,14 +500,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 3541218597
+  GlobalObjectIdHash: 3888416660
   InScenePlacedSourceGlobalObjectIdHash: 3541218597
   m_InScenePlacedDisabledByDefault: 0
   DeferredDespawnTick: 0
   Ownership: 1
   AlwaysReplicateAsRoot: 0
   SynchronizeTransform: 1
-  m_InScenePlaced: 0
+  m_InScenePlaced: 1
   ActiveSceneSynchronization: 0
   SceneMigrationSynchronization: 0
   SpawnWithObservers: 1
@@ -537,7 +537,7 @@ MonoBehaviour:
   staminaRegenRate: 5
   staminaRegenDelay: 1
   cameraTransform: {fileID: 0}
-  animator: {fileID: 0}
+  animator: {fileID: 6578282987997301338}
 --- !u!143 &7072880683765576538
 CharacterController:
   m_ObjectHideFlags: 0
