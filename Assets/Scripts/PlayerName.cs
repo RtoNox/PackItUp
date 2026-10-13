@@ -126,4 +126,10 @@ public class PlayerName : NetworkBehaviour
 
         playerName.Value = newName;
     }
+
+    public string PlayerNameValue
+    {
+        get {return playerName.Value.ToString();}
+    }
+
 }

@@ -8,6 +8,8 @@ using System.Linq;
 
 public class PointCalculator : MonoBehaviour
 {
+    // [SerializeField] private PlayerName localNa;me
+
     public List<PlayerResult> CalculateRankings()
     {
         PlayerPoints[] players = FindObjectsOfType<PlayerPoints>();
@@ -23,9 +25,12 @@ public class PointCalculator : MonoBehaviour
 
         for (int i = 0; i < rankedPlayers.Length; i++)
         {
+        PlayerName playerNameScript = rankedPlayers[i].GetComponent<PlayerName>();
+
         results.Add(new PlayerResult
          {
             clientId = rankedPlayers[i].OwnerClientId,
+            playerName = playerNameScript.PlayerNameValue,
             points = rankedPlayers[i].Points.Value,
             rank = i + 1
          });
@@ -48,6 +53,7 @@ public class PointCalculator : MonoBehaviour
 public class PlayerResult
 {
     public ulong clientId;
+    public string playerName;
     public int points;
     public int rank;
 }

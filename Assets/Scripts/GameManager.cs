@@ -24,10 +24,8 @@ public class GameManager : MonoBehaviour
     public Button menuToMainMenuButt;
     public Button returnToGameButt;
 
-    [SerializeField] private TextMeshProUGUI rank1Text;
-    [SerializeField] private TextMeshProUGUI rank2Text;
-    [SerializeField] private TextMeshProUGUI rank3Text;
-    [SerializeField] private TextMeshProUGUI rank4Text;
+    [SerializeField] private Transform leaderboardContainer;
+    [SerializeField] private Leaderboard entryPrefab;
 
     [SerializeField] private TMP_Text time;
     [SerializeField] private PointCalculator pointCalculator;
@@ -45,18 +43,33 @@ public class GameManager : MonoBehaviour
 
     public void ShowResults(List<PlayerResult> results)
     {
-        TextMeshProUGUI[] rankTexts =
-        {
-            rank1Text,
-            rank2Text,
-            rank3Text,
-            rank4Text
-        };
+        // TextMeshProUGUI[] rankTexts =
+        // {
+        //     rank1Text,
+        //     rank2Text,
+        //     rank3Text,
+        //     rank4Text
+        // };
 
-        for (int i = 0; i < results.Count && i < rankTexts.Length; i++)
+        foreach (Transform child in leaderboardContainer)
         {
-            rankTexts[i].text = $"{results[i].rank}. Player {results[i].clientId}, {results[i].points} Points";
+            Destroy(child.gameObject);
         }
+
+        foreach (PlayerResult result in results)
+        {
+            Leaderboard entry =
+                Instantiate(
+                    entryPrefab,
+                    leaderboardContainer);
+
+            entry.SetData(result);
+        }
+
+        // for (int i = 0; i < results.Count && i < rankTexts.Length; i++)
+        // {
+        //     rankTexts[i].text = $"{results[i].rank}. Player {results[i].clientId}, {results[i].points} Points";
+        // }
     }
 
 
