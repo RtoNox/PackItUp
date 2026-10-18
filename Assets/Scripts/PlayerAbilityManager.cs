@@ -1,18 +1,49 @@
 using UnityEngine;
 using Unity.Netcode;
+using Unity.Collections;
 
 public class PlayerAbilityManager : NetworkBehaviour
 {
+    private NetworkVariable<FixedString32Bytes> netAbility1 = new NetworkVariable<FixedString32Bytes>("Steal", NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+    private NetworkVariable<FixedString32Bytes> netAbility2 = new NetworkVariable<FixedString32Bytes>("Stun", NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+
     public override void OnNetworkSpawn()
     {
         base.OnNetworkSpawn();
 
+        if (IsOwner)
+        {
+            string localAbility1 = AbilityDataHolder.SelectedAbility1;
+            string localAbility2 = AbilityDataHolder.SelectedAbility2;
+
+            Debug.Log($"[Client] Mengirim pilihan ability saya ke Server -> 1: {localAbility1}, 2: {localAbility2}");
+
+            SubmitAbilityChoiceServerRpc(localAbility1, localAbility2);
+        }
+
+        netAbility1.OnValueChanged += (oldVal, newVal) => ApplyAbilities();
+        netAbility2.OnValueChanged += (oldVal, newVal) => ApplyAbilities();
+
+        ApplyAbilities();
+    }
+
+    [ServerRpc]
+    private void SubmitAbilityChoiceServerRpc(string ab1, string ab2, ServerRpcParams rpcParams = default)
+    {
+        netAbility1.Value = ab1;
+        netAbility2.Value = ab2;
+        
+        Debug.Log($"[Server] Menyimpan ability untuk Client ID {rpcParams.Receive.SenderClientId} -> 1: {ab1}, 2: {ab2}");
+    }
+
+    private void ApplyAbilities()
+    {
         if (!IsOwner) return;
 
-        string ability1 = PlayerPrefs.GetString("SelectedAbility1", "Steal");
-        string ability2 = PlayerPrefs.GetString("SelectedAbility2", "Stun");
+        string ability1 = netAbility1.Value.ToString();
+        string ability2 = netAbility2.Value.ToString();
 
-        Debug.Log($"[AbilityManager] Slot 1 (F): {ability1} | Slot 2 (R): {ability2}");
+        Debug.Log($"[ApplyAbilities] Menerapkan ke Player {OwnerClientId} -> Slot 1: '{ability1}' | Slot 2: '{ability2}'");
 
         AbilitySteal stealComp = GetComponent<AbilitySteal>();
         AbilityStun stunComp = GetComponent<AbilityStun>();
@@ -26,33 +57,38 @@ public class PlayerAbilityManager : NetworkBehaviour
         if (warpComp != null) warpComp.enabled = false;
         if (behindYouComp != null) behindYouComp.enabled = false;
 
-        ConfigureAbility(ability1, stealComp, stunComp, jammerComp, warpComp, behindYouComp, KeyCode.F);
-        ConfigureAbility(ability2, stealComp, stunComp, jammerComp, warpComp, behindYouComp, KeyCode.R);
+        ConfigureSingleAbility(ability1, stealComp, stunComp, jammerComp, warpComp, behindYouComp, KeyCode.F);
+        ConfigureSingleAbility(ability2, stealComp, stunComp, jammerComp, warpComp, behindYouComp, KeyCode.R);
     }
 
-    private void ConfigureAbility(string abilityName, AbilitySteal steal, AbilityStun stun, AbilityJammer jammer, AbilityWarp warp, AbilityBehindYou behindYou, KeyCode assignedKey)
+    private void ConfigureSingleAbility(string abilityName, AbilitySteal steal, AbilityStun stun, AbilityJammer jammer, AbilityWarp warp, AbilityBehindYou behindYou, KeyCode assignedKey)
     {
-        if (string.Equals(abilityName, "Steal", System.StringComparison.OrdinalIgnoreCase) && steal != null)
+        if (string.IsNullOrEmpty(abilityName)) return;
+
+        string cleanName = abilityName.Trim();
+
+        if (string.Equals(cleanName, "Steal", System.StringComparison.OrdinalIgnoreCase) && steal != null)
         {
             steal.enabled = true;
             steal.assignedKey = assignedKey;
         }
-        else if (string.Equals(abilityName, "Stun", System.StringComparison.OrdinalIgnoreCase) && stun != null)
+        else if (string.Equals(cleanName, "Stun", System.StringComparison.OrdinalIgnoreCase) && stun != null)
         {
             stun.enabled = true;
             stun.assignedKey = assignedKey;
         }
-        else if (string.Equals(abilityName, "Jammer", System.StringComparison.OrdinalIgnoreCase) && jammer != null)
+        else if (string.Equals(cleanName, "Jammer", System.StringComparison.OrdinalIgnoreCase) && jammer != null)
         {
             jammer.enabled = true;
             jammer.assignedKey = assignedKey;
         }
-        else if (string.Equals(abilityName, "Warp", System.StringComparison.OrdinalIgnoreCase) && warp != null)
+        else if (string.Equals(cleanName, "Warp", System.StringComparison.OrdinalIgnoreCase) && warp != null)
         {
             warp.enabled = true;
             warp.assignedKey = assignedKey;
         }
-        else if (string.Equals(abilityName, "Behind You", System.StringComparison.OrdinalIgnoreCase) && behindYou != null)
+        else if ((string.Equals(cleanName, "Behind You", System.StringComparison.OrdinalIgnoreCase) || 
+                  string.Equals(cleanName, "BehindYou", System.StringComparison.OrdinalIgnoreCase)) && behindYou != null)
         {
             behindYou.enabled = true;
             behindYou.assignedKey = assignedKey;

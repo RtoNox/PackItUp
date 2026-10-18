@@ -69,16 +69,14 @@ public class CanvasMainMenu : MonoBehaviour
             tempSlot2 = abilityName;
             Debug.Log($"[MainMenu] Slot 2 (R) terpilih: {tempSlot2}. Kedua skill lengkap!");
 
-            PlayerPrefs.SetString("SelectedAbility1", tempSlot1);
-            PlayerPrefs.SetString("SelectedAbility2", tempSlot2);
-            PlayerPrefs.Save();
+            AbilityDataHolder.SelectedAbility1 = tempSlot1;
+            AbilityDataHolder.SelectedAbility2 = tempSlot2;
 
             Debug.Log("[MainMenu] Berpindah ke scene Lobby...");
             SceneManager.LoadScene("Lobby");
         }
     }
 
-  
     public void SelectSteal() { OnSelectSkill("Steal"); }
     public void SelectStun() { OnSelectSkill("Stun"); }
     public void SelectJammer() { OnSelectSkill("Jammer"); }
