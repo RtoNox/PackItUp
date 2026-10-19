@@ -8,10 +8,19 @@ using Unity.Services.Authentication;
 using Unity.Services.Multiplayer;
 using UnityEngine.SceneManagement;
 using TMPro;
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine.UI;
 
 #if UNITY_EDITOR
 using ParrelSync;
 #endif
+
+public enum RoomState
+{
+    RoomScreen,
+    AbilityScreen
+}
 
 public class RoomManager : MonoBehaviour
 {
@@ -26,6 +35,10 @@ public class RoomManager : MonoBehaviour
     [Header("Game Settings")]
     [SerializeField] private int maxPlayers = 4;
     [SerializeField] private string gameSceneName = "GameScene";
+
+    public GameObject roomScreenUI;
+    public GameObject abilityScreenUI;
+    public RoomState currentState { get; private set; }
 
     private ISession currentSession;
 
@@ -45,6 +58,71 @@ public class RoomManager : MonoBehaviour
 
         if (servicesReady)
             await CreateRoom();
+    }
+
+    void Update()
+    {
+        if (Input.GetKeyDown(KeyCode.Escape))
+        {
+            if (currentState == RoomState.AbilityScreen)
+            {
+                ChangeState(RoomState.RoomScreen);
+            }
+        }
+    }
+
+    public void ChangeState(RoomState newState)
+    {
+        StartCoroutine(TransitionToState(newState));
+
+        currentState = newState;
+    }
+
+    public void RoomToAbility()
+    {
+        ChangeState(RoomState.AbilityScreen);
+    }
+
+    public void AbilityToRoom()
+    {
+        ChangeState(RoomState.RoomScreen);
+    }
+
+    private IEnumerator TransitionToState(RoomState newState)
+    {
+        if(newState != RoomState.RoomScreen)
+        {
+            yield return new WaitForSecondsRealtime(0);
+        }
+
+        currentState = newState;
+        HandleStateChange();
+    }
+
+    private void HandleStateChange()
+    {
+        HideAllMenu();
+
+        switch (currentState)
+        {
+            case RoomState.RoomScreen:
+                roomScreenUI.SetActive(true);
+                break;
+            case RoomState.AbilityScreen:
+                abilityScreenUI.SetActive(true);
+                break;
+        }
+    }
+
+    private void HideAllMenu()
+    {
+        roomScreenUI.SetActive(false);
+        abilityScreenUI.SetActive(false);
+    }
+
+    public void RoomToMainMenu()
+    {
+        UnityEngine.SceneManagement.SceneManager.LoadScene("MainMenu");
     }
 
     // =========================================================

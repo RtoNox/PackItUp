@@ -43,6 +43,11 @@ public class RoomJoin : MonoBehaviour
         await InitializeUnityServices();
     }
 
+    public void JoinToMainMenu()
+    {
+        UnityEngine.SceneManagement.SceneManager.LoadScene("MainMenu");
+    }
+
     // =========================================================
     // UNITY SERVICES
     // =========================================================
