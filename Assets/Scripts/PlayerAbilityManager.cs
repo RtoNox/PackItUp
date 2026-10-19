@@ -13,10 +13,10 @@ public class PlayerAbilityManager : NetworkBehaviour
 
         if (IsOwner)
         {
-            string localAbility1 = AbilityDataHolder.SelectedAbility1;
-            string localAbility2 = AbilityDataHolder.SelectedAbility2;
+            string localAbility1 = string.IsNullOrEmpty(AbilityDataHolder.SelectedAbility1) ? "Steal" : AbilityDataHolder.SelectedAbility1;
+            string localAbility2 = string.IsNullOrEmpty(AbilityDataHolder.SelectedAbility2) ? "Stun" : AbilityDataHolder.SelectedAbility2;
 
-            Debug.Log($"[Client] Mengirim pilihan ability saya ke Server -> 1: {localAbility1}, 2: {localAbility2}");
+            Debug.Log($"[Client] Kirim ke Server -> Slot 1 (Q): {localAbility1}, Slot 2 (E): {localAbility2}");
 
             SubmitAbilityChoiceServerRpc(localAbility1, localAbility2);
         }
@@ -32,8 +32,6 @@ public class PlayerAbilityManager : NetworkBehaviour
     {
         netAbility1.Value = ab1;
         netAbility2.Value = ab2;
-        
-        Debug.Log($"[Server] Menyimpan ability untuk Client ID {rpcParams.Receive.SenderClientId} -> 1: {ab1}, 2: {ab2}");
     }
 
     private void ApplyAbilities()
@@ -42,8 +40,6 @@ public class PlayerAbilityManager : NetworkBehaviour
 
         string ability1 = netAbility1.Value.ToString();
         string ability2 = netAbility2.Value.ToString();
-
-        Debug.Log($"[ApplyAbilities] Menerapkan ke Player {OwnerClientId} -> Slot 1: '{ability1}' | Slot 2: '{ability2}'");
 
         AbilitySteal stealComp = GetComponent<AbilitySteal>();
         AbilityStun stunComp = GetComponent<AbilityStun>();

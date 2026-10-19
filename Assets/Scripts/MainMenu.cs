@@ -1,4 +1,3 @@
-
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -39,8 +38,19 @@ public class MainMenu : MonoBehaviour
         LoadScene("GIVEMEMONEYPLSBROINEEDTHIS");
     }
 
+    // Dipanggil dari tombol Ability / Skil di Main Menu
     public void GoToAbility()
     {
+        AbilityDataHolder.PreviousScene = "MainMenu";
+        Debug.Log("[Navigation] Membuka Ability dari MainMenu");
+        LoadScene("Ability");
+    }
+
+    // DIPANGGIL KHUSUS DARI TOMBOL SKIL DI ROOMSCENE
+    public void OpenAbilityFromRoomScene()
+    {
+        AbilityDataHolder.PreviousScene = "RoomScene";
+        Debug.Log("[Navigation] Membuka Ability dari RoomScene");
         LoadScene("Ability");
     }
 
@@ -67,5 +77,4 @@ public class MainMenu : MonoBehaviour
             );
         }
     }
-   
 }

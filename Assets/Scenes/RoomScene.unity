@@ -1307,7 +1307,7 @@ MonoBehaviour:
       - m_Target: {fileID: 5233713523640926230, guid: 0f113d1b3f4745b41b79f6450a29a3c0,
           type: 3}
         m_TargetAssemblyTypeName: MainMenu, Assembly-CSharp
-        m_MethodName: GoToAbility
+        m_MethodName: OpenAbilityFromRoomScene
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
