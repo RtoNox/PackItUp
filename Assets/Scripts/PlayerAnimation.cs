@@ -1,31 +1,36 @@
-
 using UnityEngine;
 
 public class PlayerAnimation : MonoBehaviour
 {
-    public Animator animator;
-    public float movementThreshold = 0.1f;
+    [SerializeField] private Animator animator;
 
-    void Update()
+    private PlayerMovement playerMovement;
+
+    private static readonly int IsRunningHash =
+        Animator.StringToHash("IsRunning");
+
+    private void Awake()
     {
-        // Get the player's movement speed
-        Vector3 velocity = Vector3.zero;
+        playerMovement = GetComponentInParent<PlayerMovement>();
 
-        CharacterController controller =
-            GetComponentInParent<CharacterController>();
+        if (animator == null)
+            animator = GetComponent<Animator>();
 
-        if (controller != null)
-        {
-            velocity = controller.velocity;
-        }
+        if (playerMovement == null)
+            Debug.LogError("PlayerMovement not found in parent!", this);
 
-        // Check if the player is moving horizontally
-        Vector3 horizontalVelocity =
-            new Vector3(velocity.x, 0, velocity.z);
+        if (animator == null)
+            Debug.LogError("Animator not found!", this);
+    }
 
-        bool isRunning =
-            horizontalVelocity.magnitude > movementThreshold;
+    private void Update()
+    {
+        if (animator == null || playerMovement == null)
+            return;
 
-        animator.SetBool("IsRunning", isRunning);
+        animator.SetBool(
+            IsRunningHash,
+            playerMovement.IsMoving
+        );
     }
 }
