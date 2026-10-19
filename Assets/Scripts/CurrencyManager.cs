@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using Unity.Netcode;
+using TMPro;
 
 public enum CurrencyType
 {
@@ -11,6 +12,9 @@ public enum CurrencyType
 public class CurrencyManager : MonoBehaviour
 {
     public static CurrencyManager Instance { get; private set; }
+
+    [SerializeField] private CurrencyType currency;
+    [SerializeField] private TMP_Text amountText;
 
     private Dictionary<CurrencyType, int> balances = new();
 
@@ -28,6 +32,7 @@ public class CurrencyManager : MonoBehaviour
         DontDestroyOnLoad(gameObject);
 
         LoadCurrencies();
+        UpdateCurrencyDisplay();
     }
 
     public int GetBalance(CurrencyType currency)
@@ -38,6 +43,12 @@ public class CurrencyManager : MonoBehaviour
         }
 
         return 0;
+    }
+
+    public void UpdateCurrencyDisplay()
+    {
+        int amount = GetBalance(currency);
+        amountText.text = amount.ToString();
     }
 
     public void AddCurrency(CurrencyType currency, int amount)
@@ -52,6 +63,7 @@ public class CurrencyManager : MonoBehaviour
         balances[currency] = currentBalance + amount;
 
         SaveCurrency(currency);
+        UpdateCurrencyDisplay();
 
         Debug.Log($"Added {amount} {currency}. New balance: {balances[currency]}");
     }
@@ -75,6 +87,7 @@ public class CurrencyManager : MonoBehaviour
         balances[currency] = currentBalance - amount;
 
         SaveCurrency(currency);
+        UpdateCurrencyDisplay();
 
         Debug.Log($"Spent {amount} {currency}. New balance: {balances[currency]}");
 
@@ -85,10 +98,6 @@ public class CurrencyManager : MonoBehaviour
     {
         return GetBalance(currency) >= amount;
     }
-
-    // -------------------------
-    // Saving / Loading
-    // -------------------------
 
     private void SaveCurrency(CurrencyType currency)
     {
@@ -109,7 +118,6 @@ public class CurrencyManager : MonoBehaviour
         }
     }
 
-    // Optional: useful during development
     public void ResetAllCurrencies()
     {
         foreach (CurrencyType currency in Enum.GetValues(typeof(CurrencyType)))
