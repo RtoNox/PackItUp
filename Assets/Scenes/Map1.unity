@@ -5258,7 +5258,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: 12.152832, y: -10.13501}
+  m_AnchoredPosition: {x: 12.152832, y: -10.13504}
   m_SizeDelta: {x: -156.39282, y: -78.3916}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &957454691
@@ -10612,7 +10612,7 @@ MonoBehaviour:
     type: 3}
   time: {fileID: 353979244}
   pointCalculator: {fileID: 414120572}
-  roundTime: 15
+  roundTime: 100
 --- !u!4 &1909825001
 Transform:
   m_ObjectHideFlags: 0

@@ -35,11 +35,9 @@ public class PlayerAnimation : MonoBehaviour
         if (animator == null || playerMovement == null)
             return;
 
-        // Only accept input from the local player's character.
         if (!playerMovement.IsOwner)
             return;
 
-        // Update the normal Idle/Run animation.
         animator.SetBool(IsRunningHash, playerMovement.IsMoving);
 
         // Press 1 to play the emote.
