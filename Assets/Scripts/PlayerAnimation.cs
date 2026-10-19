@@ -2,12 +2,19 @@ using UnityEngine;
 
 public class PlayerAnimation : MonoBehaviour
 {
+    [Header("References")]
     [SerializeField] private Animator animator;
+
+    [Header("Settings")]
+    [SerializeField] private float movementThreshold = 0.1f;
 
     private PlayerMovement playerMovement;
 
     private static readonly int IsRunningHash =
         Animator.StringToHash("IsRunning");
+
+    private static readonly int EmoteHash =
+        Animator.StringToHash("Emote");
 
     private void Awake()
     {
@@ -16,11 +23,11 @@ public class PlayerAnimation : MonoBehaviour
         if (animator == null)
             animator = GetComponent<Animator>();
 
-        if (playerMovement == null)
-            Debug.LogError("PlayerMovement not found in parent!", this);
-
         if (animator == null)
-            Debug.LogError("Animator not found!", this);
+            Debug.LogError("PlayerAnimation: Animator not found!", this);
+
+        if (playerMovement == null)
+            Debug.LogError("PlayerAnimation: PlayerMovement not found!", this);
     }
 
     private void Update()
@@ -28,9 +35,18 @@ public class PlayerAnimation : MonoBehaviour
         if (animator == null || playerMovement == null)
             return;
 
-        animator.SetBool(
-            IsRunningHash,
-            playerMovement.IsMoving
-        );
+        // Only accept input from the local player's character.
+        if (!playerMovement.IsOwner)
+            return;
+
+        // Update the normal Idle/Run animation.
+        animator.SetBool(IsRunningHash, playerMovement.IsMoving);
+
+        // Press 1 to play the emote.
+        if (Input.GetKeyDown(KeyCode.Alpha1))
+        {
+            animator.ResetTrigger(EmoteHash);
+            animator.SetTrigger(EmoteHash);
+        }
     }
 }
