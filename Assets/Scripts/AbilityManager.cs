@@ -5,12 +5,12 @@ using UnityEngine.UI;
 using UnityEngine.SceneManagement;
 using TMPro;
 
-public class CanvasMainMenu : MonoBehaviour
+public class AbilityManager : MonoBehaviour
 {
-    [Header("UI Panels")]
-    public GameObject mainMenuPanel;
-    public GameObject settingsPanel;
-    public GameObject abilitySelectionPanel;
+    // [Header("UI Panels")]
+    // public GameObject mainMenuPanel;
+    // public GameObject settingsPanel;
+    // public GameObject abilitySelectionPanel;
 
     [Header("UI Text Status Slots (Opsional)")]
     public TMP_Text slot1Text; 
@@ -32,28 +32,28 @@ public class CanvasMainMenu : MonoBehaviour
 
     void Start()
     {
-        string currentSceneName = SceneManager.GetActiveScene().name;
+        // string currentSceneName = SceneManager.GetActiveScene().name;
 
-        if (currentSceneName == "Ability")
-        {
-            if (abilitySelectionPanel != null) abilitySelectionPanel.SetActive(true);
-            if (mainMenuPanel != null) mainMenuPanel.SetActive(false);
-            if (settingsPanel != null) settingsPanel.SetActive(false);
-        }
-        else
-        {
-            OpenMainMenu();
-        }
+        // if (currentSceneName == "Ability")
+        // {
+        //     if (abilitySelectionPanel != null) abilitySelectionPanel.SetActive(true);
+        //     if (mainMenuPanel != null) mainMenuPanel.SetActive(false);
+        //     if (settingsPanel != null) settingsPanel.SetActive(false);
+        // }
+        // else
+        // {
+        //     OpenMainMenu();
+        // }
 
         UpdateAllUI();
     }
 
-    public void OpenMainMenu()
-    {
-        if (mainMenuPanel != null) mainMenuPanel.SetActive(true);
-        if (settingsPanel != null) settingsPanel.SetActive(false);
-        if (abilitySelectionPanel != null) abilitySelectionPanel.SetActive(false);
-    }
+    // public void OpenMainMenu()
+    // {
+    //     if (mainMenuPanel != null) mainMenuPanel.SetActive(true);
+    //     if (settingsPanel != null) settingsPanel.SetActive(false);
+    //     if (abilitySelectionPanel != null) abilitySelectionPanel.SetActive(false);
+    // }
 
     // ==========================================
     // LOGIKA TOMBOL BACK CERDAS
