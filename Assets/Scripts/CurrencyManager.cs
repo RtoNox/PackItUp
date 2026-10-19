@@ -130,4 +130,49 @@ public class CurrencyManager : MonoBehaviour
 
         PlayerPrefs.Save();
     }
+
+    public void AddOneCurrency()
+    {
+        int currentBalance = GetBalance(currency);
+        balances[currency] = currentBalance + 1;
+
+        SaveCurrency(currency);
+        UpdateCurrencyDisplay();
+    }
+
+    public void AddTenCurrency()
+    {
+        int currentBalance = GetBalance(currency);
+        balances[currency] = currentBalance + 10;
+
+        SaveCurrency(currency);
+        UpdateCurrencyDisplay();
+    }
+
+    public void AddHundredCurrency()
+    {
+        int currentBalance = GetBalance(currency);
+        balances[currency] = currentBalance + 100;
+
+        SaveCurrency(currency);
+        UpdateCurrencyDisplay();
+    }
+
+    public void SpendFiveCurrency()
+    {
+        int currentBalance = GetBalance(currency);
+        balances[currency] = currentBalance - 5;
+
+        SaveCurrency(currency);
+        UpdateCurrencyDisplay();
+    }
+
+    public void SpendFiftyCurrency()
+    {
+        int currentBalance = GetBalance(currency);
+        balances[currency] = currentBalance - 50;
+
+        SaveCurrency(currency);
+        UpdateCurrencyDisplay();
+    }
 }

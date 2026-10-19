@@ -315,7 +315,7 @@ MonoBehaviour:
       m_Calls: []
   m_text: '1 Pull
 
-    (Its Icon) (Jumlah)'
+    (Its Icon) 5'
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -566,8 +566,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 0, y: 0}
+  m_AnchoredPosition: {x: -2.2885132, y: -54.054382}
+  m_SizeDelta: {x: -86.8683, y: -196.4788}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &331853525
 MonoBehaviour:
@@ -1006,7 +1006,7 @@ MonoBehaviour:
       m_Calls: []
   m_text: '10 Pulls
 
-    (Its Icon) (Jumlah)'
+    (Its Icon) 50'
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -1311,7 +1311,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 725019602}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 2113294257}
+        m_TargetAssemblyTypeName: CurrencyManager, Assembly-CSharp
+        m_MethodName: SpendFiveCurrency
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!114 &725019602
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1798,7 +1810,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 895628026}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 2113294257}
+        m_TargetAssemblyTypeName: CurrencyManager, Assembly-CSharp
+        m_MethodName: SpendFiftyCurrency
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!114 &895628026
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2882,7 +2906,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 1319386738}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 2113294257}
+        m_TargetAssemblyTypeName: CurrencyManager, Assembly-CSharp
+        m_MethodName: AddTenCurrency
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!114 &1319386738
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3003,7 +3039,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 1327347925}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 2113294257}
+        m_TargetAssemblyTypeName: CurrencyManager, Assembly-CSharp
+        m_MethodName: AddOneCurrency
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!114 &1327347925
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3581,7 +3629,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 1500550221}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 2113294257}
+        m_TargetAssemblyTypeName: CurrencyManager, Assembly-CSharp
+        m_MethodName: AddHundredCurrency
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!114 &1500550221
 MonoBehaviour:
   m_ObjectHideFlags: 0
