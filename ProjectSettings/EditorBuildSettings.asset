@@ -23,5 +23,11 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/Map1.unity
     guid: dd926d1658527f04bb5911bf1a5e2bfe
+  - enabled: 1
+    path: Assets/Scenes/RoomCreate.unity
+    guid: 432f780e8e777b14884189e600b11515
+  - enabled: 1
+    path: Assets/Scenes/RoomJoin.unity
+    guid: f5b85b882e232024a8074f4a34a1b1a5
   m_configObjects: {}
   m_UseUCBPForAssetBundles: 0

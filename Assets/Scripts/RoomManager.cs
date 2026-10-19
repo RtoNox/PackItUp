@@ -5,6 +5,7 @@ using Unity.Netcode;
 using Unity.Services.Core;
 using Unity.Services.Authentication;
 using Unity.Services.Multiplayer;
+using UnityEngine.SceneManagement;
 using TMPro;
 
 #if UNITY_EDITOR
@@ -14,14 +15,11 @@ using ParrelSync;
 public class RoomManager : MonoBehaviour
 {
     [Header("UI")]
-    [SerializeField] private TMP_InputField roomIDInput;
     [SerializeField] private TMP_Text roomIDText;
     [SerializeField] private TMP_Text playerCountText;
     [SerializeField] private TMP_Text statusText;
 
     [Header("Buttons")]
-    [SerializeField] private GameObject createButton;
-    [SerializeField] private GameObject joinButton;
     [SerializeField] private GameObject startButton;
 
     [Header("Game Settings")]
@@ -30,15 +28,23 @@ public class RoomManager : MonoBehaviour
 
     private ISession currentSession;
 
+    private bool servicesReady;
+    private bool creatingRoom;
+    private bool roomCreated;
+
     private async void Start()
     {
-        // Start button should not be visible initially
         if (startButton != null)
             startButton.SetActive(false);
 
-        await InitializeUnityServices();
-    }
+        if (statusText != null)
+            statusText.text = "Initializing services...";
 
+        await InitializeUnityServices();
+
+        if (servicesReady)
+            await CreateRoom();
+    }
 
     // =========================================================
     // UNITY SERVICES
@@ -48,10 +54,10 @@ public class RoomManager : MonoBehaviour
     {
         try
         {
-            InitializationOptions options = new InitializationOptions();
+            InitializationOptions options =
+                new InitializationOptions();
 
 #if UNITY_EDITOR
-
             if (ClonesManager.IsClone())
             {
                 string cloneArgument = ClonesManager.GetArgument();
@@ -61,20 +67,15 @@ public class RoomManager : MonoBehaviour
                 );
 
                 Debug.Log(
-                    "ParrelSync Clone Profile: Clone_"
-                    + cloneArgument
-                    + "_Profile"
+                    "ParrelSync profile: Clone_"
+                    + cloneArgument + "_Profile"
                 );
             }
             else
             {
                 options.SetProfile("Original_Profile");
-
-                Debug.Log(
-                    "Original Unity Editor Profile"
-                );
+                Debug.Log("Original Unity Editor profile");
             }
-
 #endif
 
             if (UnityServices.State !=
@@ -89,13 +90,15 @@ public class RoomManager : MonoBehaviour
                     .SignInAnonymouslyAsync();
             }
 
+            servicesReady = true;
+
             Debug.Log(
                 "Player ID: "
                 + AuthenticationService.Instance.PlayerId
             );
 
             if (statusText != null)
-                statusText.text = "Ready";
+                statusText.text = "Services ready";
         }
         catch (Exception e)
         {
@@ -106,205 +109,108 @@ public class RoomManager : MonoBehaviour
             Debug.LogException(e);
 
             if (statusText != null)
-                statusText.text =
-                    "Failed to initialize";
+                statusText.text = "Initialization failed";
         }
     }
 
-
     // =========================================================
-    // CREATE ROOM
+    // AUTOMATIC ROOM CREATION
     // =========================================================
 
-    public async void CreateRoom()
+    private async Task CreateRoom()
     {
-        Debug.Log("CREATE ROOM");
+        if (!servicesReady || creatingRoom || roomCreated)
+            return;
+
+        creatingRoom = true;
 
         if (statusText != null)
             statusText.text = "Creating room...";
 
         try
         {
-            var options = new SessionOptions
+            SessionOptions options = new SessionOptions
             {
                 MaxPlayers = maxPlayers
             }.WithRelayNetwork();
-
 
             currentSession =
                 await MultiplayerService.Instance
                     .CreateSessionAsync(options);
 
-
             if (currentSession == null)
             {
-                Debug.LogError(
-                    "Session is NULL!"
+                throw new Exception(
+                    "Session creation returned null."
                 );
-
-                return;
             }
 
+            roomCreated = true;
 
-            string roomID = currentSession.Code;
-
+            currentSession.Changed += OnSessionChanged;
 
             Debug.Log(
-                "ROOM CREATED: " + roomID
+                "ROOM CREATED: " + currentSession.Code
             );
 
-
-            // Show room ID
             if (roomIDText != null)
             {
                 roomIDText.text =
-                    "Room ID: " + roomID;
+                    "Room ID: " + currentSession.Code;
             }
 
-
-            // Update player count
             UpdatePlayerCount();
 
-
-            // Hide Create and Join buttons
-            if (createButton != null)
-                createButton.SetActive(false);
-
-            if (joinButton != null)
-                joinButton.SetActive(false);
-
-
-            // ONLY HOST GETS START BUTTON
             if (startButton != null)
-                startButton.SetActive(true);
-
-
-            // Listen for players joining
-            currentSession.Changed +=
-                OnSessionChanged;
-
+            {
+                startButton.SetActive(
+                    currentSession.IsHost
+                );
+            }
 
             if (statusText != null)
+            {
                 statusText.text =
-                    "Room created";
+                    "Room created. Waiting for players...";
+            }
+
+            LogNetworkStatus();
         }
         catch (Exception e)
         {
-            Debug.LogError(
-                "CREATE ROOM FAILED"
-            );
-
+            Debug.LogError("ROOM CREATION FAILED");
             Debug.LogException(e);
 
             if (statusText != null)
-                statusText.text =
-                    "Failed to create room";
+                statusText.text = "Failed to create room";
+        }
+        finally
+        {
+            creatingRoom = false;
         }
     }
 
-
     // =========================================================
-    // JOIN ROOM
+    // NETWORK STATUS
     // =========================================================
 
-    public async void JoinRoom()
+    private void LogNetworkStatus()
     {
-        if (roomIDInput == null)
+        if (NetworkManager.Singleton == null)
         {
-            Debug.LogError(
-                "Room ID Input is not assigned!"
+            Debug.LogWarning(
+                "NetworkManager.Singleton is null. "
+                + "Check your NetworkManager setup."
             );
 
             return;
         }
-
-
-        string roomID =
-            roomIDInput.text.Trim().ToUpper();
-
-
-        if (string.IsNullOrEmpty(roomID))
-        {
-            if (statusText != null)
-                statusText.text =
-                    "Enter a Room ID";
-
-            return;
-        }
-
 
         Debug.Log(
-            "JOINING ROOM: " + roomID
+            "NGO listening: "
+            + NetworkManager.Singleton.IsListening
         );
-
-
-        if (statusText != null)
-            statusText.text =
-                "Joining room...";
-
-
-        try
-        {
-            currentSession =
-                await MultiplayerService.Instance
-                    .JoinSessionByCodeAsync(roomID);
-
-
-            Debug.Log(
-                "JOINED ROOM: " + roomID
-            );
-
-
-            // Show room ID
-            if (roomIDText != null)
-            {
-                roomIDText.text =
-                    "Room ID: " + roomID;
-            }
-
-
-            // Update player count
-            UpdatePlayerCount();
-
-
-            // Hide Create and Join buttons
-            if (createButton != null)
-                createButton.SetActive(false);
-
-            if (joinButton != null)
-                joinButton.SetActive(false);
-
-
-            // IMPORTANT:
-            // Client does NOT get Start button
-            if (startButton != null)
-                startButton.SetActive(false);
-
-
-            // Listen for player changes
-            currentSession.Changed +=
-                OnSessionChanged;
-
-
-            if (statusText != null)
-                statusText.text =
-                    "Joined room";
-        }
-        catch (Exception e)
-        {
-            Debug.LogError(
-                "JOIN ROOM FAILED"
-            );
-
-            Debug.LogException(e);
-
-
-            if (statusText != null)
-                statusText.text =
-                    "Room not found";
-        }
     }
-
 
     // =========================================================
     // SESSION CHANGED
@@ -315,78 +221,80 @@ public class RoomManager : MonoBehaviour
         UpdatePlayerCount();
     }
 
-
     // =========================================================
     // PLAYER COUNT
     // =========================================================
 
     private void UpdatePlayerCount()
     {
-        if (currentSession == null)
-            return;
-
-
-        if (playerCountText != null)
+        if (currentSession == null ||
+            playerCountText == null)
         {
-            playerCountText.text =
-                "Players: "
-                + currentSession.Players.Count
-                + " / "
-                + maxPlayers;
+            return;
         }
+
+        playerCountText.text =
+            "Players: "
+            + currentSession.Players.Count
+            + " / "
+            + maxPlayers;
     }
 
-
     // =========================================================
-    // START GAME
+    // START GAME — HOST ONLY
     // =========================================================
 
     public void StartGame()
     {
-        if (currentSession == null)
-        {
-            Debug.LogError(
-                "No room exists!"
-            );
-
-            return;
-        }
-
-
-        // Make absolutely sure only host can start
-        if (!currentSession.IsHost)
+        if (currentSession == null ||
+            !currentSession.IsHost)
         {
             Debug.LogWarning(
-                "Only the host can start the game!"
+                "Only the host can start the game."
             );
 
             return;
         }
-
-
-        Debug.Log(
-            "HOST STARTING GAME"
-        );
-
-
-        if (statusText != null)
-            statusText.text =
-                "Starting game...";
-
 
         if (NetworkManager.Singleton == null)
         {
-            Debug.LogError(
-                "NetworkManager is missing!"
-            );
+            Debug.LogError("NetworkManager is missing!");
+
+            if (statusText != null)
+                statusText.text = "NetworkManager is missing";
 
             return;
         }
 
+        if (!NetworkManager.Singleton.IsListening)
+        {
+            Debug.LogError(
+                "Netcode is not listening. "
+                + "Check the session networking integration."
+            );
+
+            if (statusText != null)
+                statusText.text = "Network is not ready";
+
+            return;
+        }
+
+        if (statusText != null)
+            statusText.text = "Starting game...";
 
         NetworkManager.Singleton.SceneManager.LoadScene(
             gameSceneName,
-            UnityEngine.SceneManagement.LoadSceneMode.Single
+            LoadSceneMode.Single
         );
+    }
+
+    // =========================================================
+    // CLEANUP
+    // =========================================================
+
+    private void OnDestroy()
+    {
+        if (currentSession != null)
+            currentSession.Changed -= OnSessionChanged;
     }
 }

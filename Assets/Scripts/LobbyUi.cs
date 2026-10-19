@@ -28,7 +28,7 @@ public class LobbyUI : MonoBehaviour
         PlayerPrefs.SetString("UserRole", "Client");
         PlayerPrefs.Save();
 
-        SceneManager.LoadScene("RoomScene");
+        SceneManager.LoadScene("RoomJoin");
     }
 
     public void OnBackToMainMenuClicked()
