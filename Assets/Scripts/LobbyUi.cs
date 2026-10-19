@@ -8,12 +8,9 @@ using ParrelSync;
 
 public class LobbyUI : MonoBehaviour
 {
-    [Header("Lobby UI References")]
-    public TMP_InputField playerNameInput;
-
     public void OnHostButtonClicked()
     {
-        SavePlayerName();
+        //SavePlayerName();
 
         PlayerPrefs.SetString("UserRole", "Host");
         PlayerPrefs.Save();
@@ -23,7 +20,7 @@ public class LobbyUI : MonoBehaviour
 
     public void OnJoinButtonClicked()
     {
-        SavePlayerName();
+        //SavePlayerName();
 
         PlayerPrefs.SetString("UserRole", "Client");
         PlayerPrefs.Save();
@@ -36,32 +33,32 @@ public class LobbyUI : MonoBehaviour
         SceneManager.LoadScene("MainMenu");
     }
 
-    private void SavePlayerName()
-    {
-        string playerName;
+    // private void SavePlayerName()
+    // {
+    //     string playerName;
 
-        if (playerNameInput != null &&
-            !string.IsNullOrWhiteSpace(playerNameInput.text))
-        {
-            playerName = playerNameInput.text.Trim();
-        }
-        else
-        {
-            playerName = "Player_" + Random.Range(100, 999);
-        }
+    //     if (playerNameInput != null &&
+    //         !string.IsNullOrWhiteSpace(playerNameInput.text))
+    //     {
+    //         playerName = playerNameInput.text.Trim();
+    //     }
+    //     else
+    //     {
+    //         playerName = "Player_" + Random.Range(100, 999);
+    //     }
 
-        string playerNameKey = GetPlayerNameKey();
+    //     string playerNameKey = GetPlayerNameKey();
 
-        PlayerPrefs.SetString(playerNameKey, playerName);
-        PlayerPrefs.Save();
+    //     PlayerPrefs.SetString(playerNameKey, playerName);
+    //     PlayerPrefs.Save();
 
-        Debug.Log(
-            "Saved Player Name: " + playerName +
-            " | Key: " + playerNameKey
-        );
-    }
+    //     Debug.Log(
+    //         "Saved Player Name: " + playerName +
+    //         " | Key: " + playerNameKey
+    //     );
+    // }
 
-    private string GetPlayerNameKey()
+    /*private string GetPlayerNameKey()
     {
 #if UNITY_EDITOR
         if (ClonesManager.IsClone())
@@ -75,5 +72,5 @@ public class LobbyUI : MonoBehaviour
 #else
         return "PlayerName";
 #endif
-    }
+    }*/
 }

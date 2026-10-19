@@ -57,8 +57,8 @@ public class PlayerAbilityManager : NetworkBehaviour
         if (warpComp != null) warpComp.enabled = false;
         if (behindYouComp != null) behindYouComp.enabled = false;
 
-        ConfigureSingleAbility(ability1, stealComp, stunComp, jammerComp, warpComp, behindYouComp, KeyCode.F);
-        ConfigureSingleAbility(ability2, stealComp, stunComp, jammerComp, warpComp, behindYouComp, KeyCode.R);
+        ConfigureSingleAbility(ability1, stealComp, stunComp, jammerComp, warpComp, behindYouComp, KeyCode.Q);
+        ConfigureSingleAbility(ability2, stealComp, stunComp, jammerComp, warpComp, behindYouComp, KeyCode.E);
     }
 
     private void ConfigureSingleAbility(string abilityName, AbilitySteal steal, AbilityStun stun, AbilityJammer jammer, AbilityWarp warp, AbilityBehindYou behindYou, KeyCode assignedKey)

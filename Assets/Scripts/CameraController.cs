@@ -72,16 +72,7 @@ public class CameraController : MonoBehaviour
             FindLocalPlayer();
         }
 
-        // Keyboard camera rotation
-        if (useKeyboardRotation &&
-            Cursor.lockState == CursorLockMode.Locked)
-        {
-            if (Input.GetKey(KeyCode.Q))
-                currentYaw -= keyboardRotationSpeed * Time.deltaTime;
 
-            if (Input.GetKey(KeyCode.E))
-                currentYaw += keyboardRotationSpeed * Time.deltaTime;
-        }
 
         // Mouse camera rotation
         if (useMouseRotation &&
