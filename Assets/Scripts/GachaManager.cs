@@ -46,6 +46,11 @@ public class GachaManager : MonoBehaviour
         ChangeState(GachaMenuState.GachaScreen);
     }
 
+    public void GachaToMainMenu()
+    {
+        UnityEngine.SceneManagement.SceneManager.LoadScene("MainMenu");
+    }
+
     private IEnumerator TransitionToState(GachaMenuState newState)
     {
         if(newState != GachaMenuState.GachaScreen)

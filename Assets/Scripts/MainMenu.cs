@@ -1,8 +1,93 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using UnityEngine.UI;
+using System.Collections;
+using System.Collections.Generic;
+using TMPro;
+
+public enum MainMenuState
+{
+    MainMenuScreen,
+    ShopScreen,
+    AbilityScreen
+}
 
 public class MainMenu : MonoBehaviour
 {
+    public GameObject mainMenuScreenUI;
+    public GameObject shopScreenUI;
+    public GameObject abilityScreenUI;
+    public MainMenuState currentState { get; private set; }
+
+    void Update()
+    {
+        if (Input.GetKeyDown(KeyCode.Escape))
+        {
+            if (currentState == MainMenuState.ShopScreen || currentState == MainMenuState.AbilityScreen)
+            {
+                ChangeState(MainMenuState.MainMenuScreen);
+            }
+        }
+    }
+
+    public void ChangeState(MainMenuState newState)
+    {
+        StartCoroutine(TransitionToState(newState));
+
+        currentState = newState;
+    }
+
+    public void MainMenuToShop()
+    {
+        ChangeState(MainMenuState.ShopScreen);
+    }
+
+    public void MainMenuToAbility()
+    {
+        ChangeState(MainMenuState.AbilityScreen);
+    }
+
+    public void StuffToMainMenu()
+    {
+        ChangeState(MainMenuState.MainMenuScreen);
+    }
+
+    private IEnumerator TransitionToState(MainMenuState newState)
+    {
+        if(newState != MainMenuState.MainMenuScreen)
+        {
+            yield return new WaitForSecondsRealtime(0);
+        }
+
+        currentState = newState;
+        HandleStateChange();
+    }
+
+    private void HandleStateChange()
+    {
+        HideAllMenu();
+
+        switch (currentState)
+        {
+            case MainMenuState.MainMenuScreen:
+                mainMenuScreenUI.SetActive(true);
+                break;
+            case MainMenuState.ShopScreen:
+                shopScreenUI.SetActive(true);
+                break;
+            case MainMenuState.AbilityScreen:
+                abilityScreenUI.SetActive(true);
+                break;
+        }
+    }
+
+    private void HideAllMenu()
+    {
+        mainMenuScreenUI.SetActive(false);
+        shopScreenUI.SetActive(false);
+        abilityScreenUI.SetActive(false);
+    }
+
     public void GoToLobby()
     {
         LoadScene("Lobby");
