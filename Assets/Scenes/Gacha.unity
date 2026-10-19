@@ -1104,7 +1104,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &687555181
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2269,7 +2269,7 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 1701483769}
+      - m_Target: {fileID: 0}
         m_TargetAssemblyTypeName: LobbyUI, Assembly-CSharp
         m_MethodName: OnBackToMainMenuClicked
         m_Mode: 1
@@ -3124,7 +3124,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 1348198237}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 1701483769}
+        m_TargetAssemblyTypeName: GachaManager, Assembly-CSharp
+        m_MethodName: GachaToShop
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!114 &1348198237
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3682,9 +3694,11 @@ MonoBehaviour:
   m_GameObject: {fileID: 1701483767}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 55592fbcf8269114a9dd4d6baa8478c9, type: 3}
+  m_Script: {fileID: 11500000, guid: 92036ae712b41f445ab647905467b532, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::LobbyUI
+  m_EditorClassIdentifier: Assembly-CSharp::GachaManager
+  gachaScreenUI: {fileID: 1833466352}
+  shopScreenUI: {fileID: 687555180}
 --- !u!1 &1779488051
 GameObject:
   m_ObjectHideFlags: 0
@@ -4159,7 +4173,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 2058458638}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 1701483769}
+        m_TargetAssemblyTypeName: GachaManager, Assembly-CSharp
+        m_MethodName: ShopToGacha
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!114 &2058458638
 MonoBehaviour:
   m_ObjectHideFlags: 0
