@@ -56,7 +56,7 @@ public class AbilityBehindYou : NetworkBehaviour
         GameObject targetPlayer = null;
         float shortestDistance = Mathf.Infinity;
 
-        Collider[] hitColliders = Physics.OverlapSphere(transform.position, 20f); // Radius pencarian target
+        Collider[] hitColliders = Physics.OverlapSphere(transform.position, 25f); // Radius
         foreach (var hit in hitColliders)
         {
             if (hit.gameObject != gameObject && hit.CompareTag("Player"))
@@ -76,12 +76,16 @@ public class AbilityBehindYou : NetworkBehaviour
             targetPosition.y = targetPlayer.transform.position.y;
 
             CharacterController charController = GetComponent<CharacterController>();
+            Component netTransform = GetComponent("ClientNetworkTransform");
+
+            if (netTransform != null) ((Behaviour)netTransform).enabled = false;
             if (charController != null) charController.enabled = false;
 
             transform.position = targetPosition;
             transform.LookAt(targetPlayer.transform);
 
             if (charController != null) charController.enabled = true;
+            if (netTransform != null) ((Behaviour)netTransform).enabled = true;
 
             Debug.Log($"[BehindYou] Berhasil berpindah ke belakang player {targetPlayer.name}!");
             success = true;

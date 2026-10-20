@@ -55,15 +55,32 @@ public class AbilityStun : NetworkBehaviour
         }
 
         bool success = false;
+        GameObject targetPlayer = null;
+        float shortestDistance = Mathf.Infinity;
+
         Collider[] hitColliders = Physics.OverlapSphere(transform.position, range);
-        
         foreach (var hit in hitColliders)
         {
             if (hit.gameObject != gameObject && hit.CompareTag("Player"))
             {
-                Debug.Log($"[Stun] Berhasil men-stun player target ({hit.gameObject.name}) selama {stunDuration} detik!");
+                float distance = Vector3.Distance(transform.position, hit.transform.position);
+                if (distance < shortestDistance)
+                {
+                    shortestDistance = distance;
+                    targetPlayer = hit.gameObject;
+                }
+            }
+        }
+
+        if (targetPlayer != null)
+        {
+            NetworkObject targetNetObj = targetPlayer.GetComponent<NetworkObject>();
+            if (targetNetObj != null)
+            {
+                ApplyStunClientRpc(targetNetObj.NetworkObjectId, stunDuration);
+
+                Debug.Log($"[Stun] Berhasil men-stun player target ({targetPlayer.name}) selama {stunDuration} detik!");
                 success = true;
-                break;
             }
         }
 
@@ -86,5 +103,35 @@ public class AbilityStun : NetworkBehaviour
             lastUseTime = serverTime;
             wasOnCooldown = true;
         }
+    }
+
+    [ClientRpc]
+    private void ApplyStunClientRpc(ulong targetNetworkObjectId, float duration)
+    {
+        if (NetworkManager.Singleton.SpawnManager.SpawnedObjects.TryGetValue(targetNetworkObjectId, out NetworkObject targetNetObj))
+        {
+            StartCoroutine(StunRoutine(targetNetObj.gameObject, duration));
+        }
+    }
+
+    private IEnumerator StunRoutine(GameObject target, float duration)
+    {
+        MonoBehaviour playerMovement = target.GetComponent<PlayerMovement>();
+        if (playerMovement != null) playerMovement.enabled = false;
+
+
+        CharacterController charController = target.GetComponent<CharacterController>();
+
+
+        Debug.Log($"[Stun] Player {target.name} sedang terkena Stun!");
+
+        // Tunggu selama durasi stun
+        yield return new WaitForSeconds(duration);
+
+
+        if (playerMovement != null) playerMovement.enabled = true;
+        
+
+        Debug.Log($"[Stun] Efek Stun pada {target.name} telah selesai.");
     }
 }
