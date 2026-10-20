@@ -601,6 +601,8 @@ MonoBehaviour:
   cooldownTime: 30
   assignedKey: 102
   abilityLevel: 1
+  stealHitVfxPrefab: {fileID: 7089612136069025782, guid: 7b77c1286ee22084b88f3032cec56c4b,
+    type: 3}
 --- !u!114 &612234431940291023
 MonoBehaviour:
   m_ObjectHideFlags: 0

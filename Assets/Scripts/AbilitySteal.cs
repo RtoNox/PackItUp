@@ -17,6 +17,10 @@ public class AbilitySteal : NetworkBehaviour
     [Header("Upgrade Settings")]
     [Range(1, 3)] public int abilityLevel = 1;
 
+    [Header("Visual Effects")]
+    [Tooltip("Masukkan Prefab Partikel efek Steal yang muncul di pemain korban")]
+    public GameObject stealHitVfxPrefab; 
+
     public float GetStealPercentage()
     {
         switch (abilityLevel)
@@ -62,7 +66,6 @@ public class AbilitySteal : NetworkBehaviour
     [ServerRpc]
     private void TryUseStealServerRpc()
     {
-        // Proteksi tambahan di server
         if (Time.time < lastUseTime + cooldownTime)
         {
             return;
@@ -88,15 +91,22 @@ public class AbilitySteal : NetworkBehaviour
                         targetPoints.Points.Value -= stolenScore;
                         myPoints.Points.Value += stolenScore;
 
-                        Debug.Log($"[Steal] Berhasil mencuri {stolenScore} poin!");
+                        Debug.Log($"[Steal] Berhasil mencuri {stolenScore} poin dari {hit.gameObject.name}!");
                         success = true;
+
+                        NetworkObject targetNetObj = hit.GetComponent<NetworkObject>();
+                        if (targetNetObj != null)
+                        {
+                            ShowStealVfxClientRpc(targetNetObj.NetworkObjectId);
+                        }
+
                         break;
                     }
                 }
             }
         }
 
-        // Cooldown HANYA aktif jika skill berhasil mengenai target dan mencuri poin
+
         if (success)
         {
             lastUseTime = Time.time;
@@ -116,6 +126,25 @@ public class AbilitySteal : NetworkBehaviour
         {
             lastUseTime = serverTime;
             wasOnCooldown = true;
+        }
+    }
+
+    [ClientRpc]
+    private void ShowStealVfxClientRpc(ulong targetNetworkObjectId)
+    {
+        if (stealHitVfxPrefab == null) return;
+
+        if (NetworkManager.Singleton.SpawnManager.SpawnedObjects.TryGetValue(targetNetworkObjectId, out NetworkObject targetNetObj))
+        {
+            GameObject targetObject = targetNetObj.gameObject;
+
+            Vector3 spawnPosition = targetObject.transform.position + Vector3.up * 1f;
+
+            GameObject vfxInstance = Instantiate(stealHitVfxPrefab, spawnPosition, targetObject.transform.rotation);
+
+            vfxInstance.transform.SetParent(targetObject.transform);
+
+            Destroy(vfxInstance, 2f);
         }
     }
 }
