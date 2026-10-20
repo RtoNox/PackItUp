@@ -1,3 +1,4 @@
+
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
@@ -42,8 +43,13 @@ public class GameManager : MonoBehaviour
 
     private bool endingSession;
     private bool roundEnded;
+    private bool menuLoading;
 
     private NetworkManager networkManager;
+
+    // =========================================================
+    // INITIALIZATION
+    // =========================================================
 
     private void Awake()
     {
@@ -56,13 +62,21 @@ public class GameManager : MonoBehaviour
 
         networkManager = NetworkManager.Singleton;
 
+        // Listen for network shutdown on every player's instance.
+        // This allows clients to return to MainMenu when the host
+        // shuts down the multiplayer session.
+        if (networkManager != null)
+        {
+            networkManager.OnClientStopped += HandleClientStopped;
+            networkManager.OnServerStopped += HandleServerStopped;
+        }
+
         ChangeToGameScreen();
     }
 
     private void Update()
     {
-        // Do not update the timer while the game menu is open or
-        // after the round has ended.
+        // Update the timer only while playing.
         if (currentState == MenuState.GameScreen && !roundEnded)
         {
             roundTime -= Time.deltaTime;
@@ -92,6 +106,7 @@ public class GameManager : MonoBehaviour
             }
         }
 
+        // Escape opens or closes the in-game menu.
         if (Input.GetKeyDown(KeyCode.Escape))
         {
             if (currentState == MenuState.GameScreen)
@@ -280,7 +295,7 @@ public class GameManager : MonoBehaviour
 
     public void ChangeToMainMenu()
     {
-        if (endingSession)
+        if (endingSession || menuLoading)
             return;
 
         Time.timeScale = 1f;
@@ -291,106 +306,127 @@ public class GameManager : MonoBehaviour
         // Offline game or already disconnected.
         if (networkManager == null || !networkManager.IsListening)
         {
-            SceneManager.LoadScene("MainMenu");
+            LoadMainMenuLocally();
             return;
         }
 
+        // Prevent repeated clicks while the shutdown is happening.
+        endingSession = true;
+
         if (networkManager.IsServer)
         {
-            // The host can end the session directly.
+            // Host pressed Leave.
+            // Shut down the session for all connected players.
             EndSessionForEveryone();
         }
         else
         {
+            // Client pressed Leave.
             // Ask the host to end the session for everyone.
             RequestEndSessionRpc();
         }
     }
 
+    // Sent by a client to the host/server.
     [Rpc(SendTo.Server, RequireOwnership = false)]
     private void RequestEndSessionRpc()
     {
-        if (NetworkManager.Singleton == null ||
-            !NetworkManager.Singleton.IsServer)
-        {
+        NetworkManager nm = NetworkManager.Singleton;
+
+        if (nm == null || !nm.IsServer || !nm.IsListening)
             return;
-        }
 
         EndSessionForEveryone();
     }
 
+    // Runs on the host/server.
     private void EndSessionForEveryone()
     {
-        if (endingSession)
-            return;
-
-        endingSession = true;
-
-        networkManager = NetworkManager.Singleton;
+        if (networkManager == null)
+            networkManager = NetworkManager.Singleton;
 
         if (networkManager == null || !networkManager.IsListening)
         {
-            SceneManager.LoadScene("MainMenu");
+            LoadMainMenuLocally();
             return;
         }
 
         if (!networkManager.IsServer)
             return;
 
-        if (networkManager.SceneManager == null)
-        {
-            Debug.LogError(
-                "Network scene management is unavailable. " +
-                "Enable Scene Management in the NetworkManager."
-            );
+        endingSession = true;
 
-            endingSession = false;
-            return;
-        }
+        Time.timeScale = 1f;
+        SetMouseLocked(false);
 
-        // All connected clients are instructed to load MainMenu.
-        networkManager.SceneManager.LoadScene(
-            "MainMenu",
-            LoadSceneMode.Single
-        );
+        // Shut down the host. NGO disconnects the connected clients.
+        // Each player's local stop callback will load MainMenu.
+        networkManager.Shutdown();
 
-        // Network shutdown must happen after the scene transition.
-        networkManager.SceneManager.OnLoadEventCompleted +=
-            OnMainMenuLoadCompleted;
+        // Fallback in case the stop callback does not load the scene.
+        StartCoroutine(LoadMenuAfterShutdown());
     }
 
-    private void OnMainMenuLoadCompleted(
-        string sceneName,
-        LoadSceneMode loadSceneMode,
-        List<ulong> clientsCompleted,
-        List<ulong> clientsTimedOut)
+    // Called locally when this player's client connection stops.
+    // This also fires for the host's local client.
+    private void HandleClientStopped(bool wasHost)
     {
-        if (sceneName != "MainMenu")
+        if (menuLoading)
             return;
 
-        if (networkManager != null &&
-            networkManager.SceneManager != null)
-        {
-            networkManager.SceneManager.OnLoadEventCompleted -=
-                OnMainMenuLoadCompleted;
-        }
-
-        // The session has ended; disconnect everyone.
-        if (networkManager != null && networkManager.IsListening)
-        {
-            networkManager.Shutdown();
-        }
-
-        Debug.Log("Multiplayer session ended. Everyone returned to MainMenu.");
+        // A stopped connection should return to the menu.
+        LoadMainMenuLocally();
     }
+
+    // Called locally when this player's server stops.
+    private void HandleServerStopped(bool wasHost)
+    {
+        if (menuLoading)
+            return;
+
+        LoadMainMenuLocally();
+    }
+
+    private IEnumerator LoadMenuAfterShutdown()
+    {
+        // Give NGO a short time to finish shutdown processing.
+        yield return null;
+        yield return null;
+
+        if (SceneManager.GetActiveScene().name != "MainMenu")
+        {
+            LoadMainMenuLocally();
+        }
+    }
+
+    private void LoadMainMenuLocally()
+    {
+        if (menuLoading)
+            return;
+
+        if (SceneManager.GetActiveScene().name == "MainMenu")
+            return;
+
+        menuLoading = true;
+
+        Time.timeScale = 1f;
+        Cursor.lockState = CursorLockMode.None;
+        Cursor.visible = true;
+
+        // Use Unity's local scene loading after the network has stopped.
+        SceneManager.LoadScene("MainMenu");
+    }
+
+    // =========================================================
+    // CLEANUP
+    // =========================================================
 
     private void OnDestroy()
     {
-        if (networkManager != null &&
-            networkManager.SceneManager != null)
+        if (networkManager != null)
         {
-            networkManager.SceneManager.OnLoadEventCompleted -=
-                OnMainMenuLoadCompleted;
+            networkManager.OnClientStopped -= HandleClientStopped;
+            networkManager.OnServerStopped -= HandleServerStopped;
         }
 
         if (instance == this)

@@ -56,7 +56,7 @@ public class AbilityBehindYou : NetworkBehaviour
         GameObject targetPlayer = null;
         float shortestDistance = Mathf.Infinity;
 
-        Collider[] hitColliders = Physics.OverlapSphere(transform.position, 25f); // Radius
+        Collider[] hitColliders = Physics.OverlapSphere(transform.position, 10000f); // Radius
         foreach (var hit in hitColliders)
         {
             if (hit.gameObject != gameObject && hit.CompareTag("Player"))
