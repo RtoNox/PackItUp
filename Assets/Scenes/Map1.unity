@@ -207,7 +207,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalScale: {x: 1, y: 2, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 1185570936}
@@ -7637,8 +7637,7 @@ PrefabInstance:
         type: 3}
       propertyPath: NetworkConfig.PlayerPrefab
       value: 
-      objectReference: {fileID: 7154400492277183936, guid: 466fd89d9b4e6e2498198ad23820b674,
-        type: 3}
+      objectReference: {fileID: 0}
     - target: {fileID: 7610236496354245720, guid: 2ce46b704b22ebb46a30da9850eb2051,
         type: 3}
       propertyPath: m_Name

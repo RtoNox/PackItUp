@@ -1,12 +1,12 @@
 using UnityEngine;
+using Unity.Netcode;
+using Unity.Netcode.Components;
 
-public class PlayerAnimation : MonoBehaviour
+public class PlayerAnimation : NetworkBehaviour
 {
     [Header("References")]
     [SerializeField] private Animator animator;
-
-    [Header("Settings")]
-    [SerializeField] private float movementThreshold = 0.1f;
+    [SerializeField] private OwnerNetworkAnimator networkAnimator;
 
     private PlayerMovement playerMovement;
 
@@ -21,30 +21,60 @@ public class PlayerAnimation : MonoBehaviour
         playerMovement = GetComponentInParent<PlayerMovement>();
 
         if (animator == null)
-            animator = GetComponent<Animator>();
+            animator = GetComponentInChildren<Animator>();
+
+        if (networkAnimator == null)
+            networkAnimator =
+                GetComponentInChildren<OwnerNetworkAnimator>();
 
         if (animator == null)
             Debug.LogError("PlayerAnimation: Animator not found!", this);
 
+        if (networkAnimator == null)
+            Debug.LogError(
+                "PlayerAnimation: OwnerNetworkAnimator not found!",
+                this
+            );
+
         if (playerMovement == null)
-            Debug.LogError("PlayerAnimation: PlayerMovement not found!", this);
+            Debug.LogError(
+                "PlayerAnimation: PlayerMovement not found!",
+                this
+            );
+    }
+
+    public override void OnNetworkSpawn()
+    {
+        base.OnNetworkSpawn();
+
+        Debug.Log(
+            "PlayerAnimation spawned. IsOwner: " + IsOwner
+        );
     }
 
     private void Update()
     {
-        if (animator == null || playerMovement == null)
+        // Only the player controlling this character
+        // should read its local input.
+        if (!IsOwner)
             return;
 
-        if (!playerMovement.IsOwner)
+        if (animator == null ||
+            networkAnimator == null ||
+            playerMovement == null)
             return;
 
-        animator.SetBool(IsRunningHash, playerMovement.IsMoving);
+        // Owner-authoritative NetworkAnimator synchronizes
+        // this parameter with the other players.
+        animator.SetBool(
+            IsRunningHash,
+            playerMovement.IsMoving
+        );
 
-        // Press 1 to play the emote.
+        // Press 1 to trigger the emote across the network.
         if (Input.GetKeyDown(KeyCode.Alpha1))
         {
-            animator.ResetTrigger(EmoteHash);
-            animator.SetTrigger(EmoteHash);
+            networkAnimator.SetTrigger(EmoteHash);
         }
     }
 }
