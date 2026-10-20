@@ -72,9 +72,7 @@ public class AbilityManager : MonoBehaviour
         SceneManager.LoadScene(targetScene);
     }
 
-    // ==========================================
-    // LOGIKA TOMBOL DINAMIS (EQUIP / UNEQUIP)
-    // ==========================================
+
 
     public void OnAbilityButtonClicked(string abilityName)
     {
@@ -126,9 +124,7 @@ public class AbilityManager : MonoBehaviour
         }
     }
 
-    // ==========================================
-    // UPDATE TAMPILAN UI & TEKS TOMBOL
-    // ==========================================
+
 
     private void UpdateAllUI()
     {
@@ -164,9 +160,7 @@ public class AbilityManager : MonoBehaviour
         buttonText.text = isEquipped ? "UnEquip" : "Equip";
     }
 
-    // ==========================================
-    // LOGIKA UPGRADE
-    // ==========================================
+
 
     public void UpgradeAbility(string abilityName)
     {
@@ -175,9 +169,7 @@ public class AbilityManager : MonoBehaviour
         Debug.Log($"[Upgrade] Ability {abilityName} sekarang Level {AbilityDataHolder.GetLevel(abilityName)}!");
     }
 
-    // ==========================================
-    // HELPER UNTUK INSPECTOR BUTTON ONCLICK
-    // ==========================================
+
     public void ClickSteal() { OnAbilityButtonClicked("Steal"); }
     public void ClickStun() { OnAbilityButtonClicked("Stun"); }
     public void ClickJammer() { OnAbilityButtonClicked("Jammer"); }
