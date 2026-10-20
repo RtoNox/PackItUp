@@ -29,6 +29,13 @@ public class MainMenu : MonoBehaviour
 
     public MainMenuState currentState { get; private set; }
 
+    private void Awake()
+    {
+        QualitySettings.vSyncCount = 0;
+        Application.targetFrameRate = 60;
+
+    }
+
     private void Start()
     {
         LoadPlayerName();
