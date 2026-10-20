@@ -1,3 +1,4 @@
+
 using System;
 using System.Threading.Tasks;
 using UnityEngine;
@@ -17,26 +18,47 @@ public class RoomJoin : MonoBehaviour
     [SerializeField] private TMP_InputField roomCodeInput;
     [SerializeField] private TMP_Text statusText;
     [SerializeField] private GameObject joinButton;
+    [SerializeField] private GameObject returnToMainMenuButton;
+
+    [Header("Scene Settings")]
+    [SerializeField] private string roomSceneName = "RoomScene";
+    [SerializeField] private string mainMenuSceneName = "MainMenu";
 
     private ISession currentSession;
+
     private bool servicesReady;
     private bool isJoining;
+    private bool isReturningToMenu;
+
+    // =========================================================
+    // INITIALIZATION
+    // =========================================================
 
     private async void Start()
     {
+        if (joinButton != null)
+            joinButton.SetActive(true);
+
+        if (returnToMainMenuButton != null)
+            returnToMainMenuButton.SetActive(true);
+
         if (statusText != null)
             statusText.text = "Initializing services...";
 
         await InitializeUnityServices();
     }
 
+    // =========================================================
+    // UNITY SERVICES
+    // =========================================================
+
     private async Task InitializeUnityServices()
     {
         try
         {
+#if UNITY_EDITOR
             InitializationOptions options = new InitializationOptions();
 
-#if UNITY_EDITOR
             if (ClonesManager.IsClone())
             {
                 string cloneArgument = ClonesManager.GetArgument();
@@ -55,13 +77,19 @@ public class RoomJoin : MonoBehaviour
                 options.SetProfile("Original_Profile");
                 Debug.Log("Original Unity Editor profile");
             }
-#endif
 
             if (UnityServices.State !=
                 ServicesInitializationState.Initialized)
             {
                 await UnityServices.InitializeAsync(options);
             }
+#else
+            if (UnityServices.State !=
+                ServicesInitializationState.Initialized)
+            {
+                await UnityServices.InitializeAsync();
+            }
+#endif
 
             if (!AuthenticationService.Instance.IsSignedIn)
             {
@@ -82,10 +110,7 @@ public class RoomJoin : MonoBehaviour
         }
         catch (Exception e)
         {
-            Debug.LogError(
-                "Unity Services initialization failed!"
-            );
-
+            Debug.LogError("Unity Services initialization failed!");
             Debug.LogException(e);
 
             if (statusText != null)
@@ -93,8 +118,15 @@ public class RoomJoin : MonoBehaviour
         }
     }
 
+    // =========================================================
+    // JOIN ROOM
+    // =========================================================
+
     public async void JoinRoom()
     {
+        if (isJoining || isReturningToMenu)
+            return;
+
         if (!servicesReady)
         {
             if (statusText != null)
@@ -103,19 +135,16 @@ public class RoomJoin : MonoBehaviour
             return;
         }
 
-        if (isJoining)
-            return;
-
         if (roomCodeInput == null)
         {
-            Debug.LogError(
-                "Room code input is not assigned!"
-            );
+            Debug.LogError("Room code input is not assigned!");
+
+            if (statusText != null)
+                statusText.text = "Room code input is missing";
 
             return;
         }
 
-        // Read the room code before using it in the try block.
         string roomCode = roomCodeInput.text.Trim();
 
         if (string.IsNullOrEmpty(roomCode))
@@ -136,7 +165,10 @@ public class RoomJoin : MonoBehaviour
 
         try
         {
-            // Join the existing session using the entered code.
+            // Clear any stale session reference before joining.
+            SharedSession.CurrentSession = null;
+            currentSession = null;
+
             currentSession =
                 await MultiplayerService.Instance
                     .JoinSessionByCodeAsync(roomCode);
@@ -148,7 +180,7 @@ public class RoomJoin : MonoBehaviour
                 );
             }
 
-            // Save the session before entering RoomScene.
+            // Share the session with RoomManager.
             SharedSession.CurrentSession = currentSession;
 
             Debug.Log(
@@ -159,8 +191,9 @@ public class RoomJoin : MonoBehaviour
             if (statusText != null)
                 statusText.text = "Joined room. Loading room...";
 
-            // Load RoomScene after the session is saved.
-            SceneManager.LoadScene("RoomScene");
+            // Prevent the finally block from re-enabling the button
+            // after the scene transition has been requested.
+            SceneManager.LoadScene(roomSceneName);
         }
         catch (Exception e)
         {
@@ -170,9 +203,16 @@ public class RoomJoin : MonoBehaviour
 
             Debug.LogException(e);
 
+            // Clean up references if joining failed.
+            SharedSession.CurrentSession = null;
+            currentSession = null;
+
             if (statusText != null)
+            {
                 statusText.text =
-                    "Failed to join room. Check the code.";
+                    "Failed to join room. Check the code, " +
+                    "room availability, and player limit.";
+            }
 
             if (joinButton != null)
                 joinButton.SetActive(true);
@@ -180,6 +220,77 @@ public class RoomJoin : MonoBehaviour
         finally
         {
             isJoining = false;
+        }
+    }
+
+    // =========================================================
+    // RETURN TO MAIN MENU
+    // =========================================================
+
+    public async void ReturnToMainMenu()
+    {
+        if (isReturningToMenu || isJoining)
+            return;
+
+        isReturningToMenu = true;
+
+        if (joinButton != null)
+            joinButton.SetActive(false);
+
+        if (returnToMainMenuButton != null)
+            returnToMainMenuButton.SetActive(false);
+
+        if (statusText != null)
+            statusText.text = "Returning to Main Menu...";
+
+        // Use the shared session if this component doesn't have one.
+        if (currentSession == null)
+            currentSession = SharedSession.CurrentSession;
+
+        try
+        {
+            if (currentSession != null)
+            {
+                if (currentSession.IsHost)
+                {
+                    // Host leaves: delete and disband the room.
+                    Debug.Log("Host is deleting the room.");
+
+                    await currentSession.AsHost().DeleteAsync();
+
+                    Debug.Log("Room deleted successfully.");
+                }
+                else
+                {
+                    // Client leaves: remove only this player.
+                    Debug.Log("Client is leaving the room.");
+
+                    await currentSession.LeaveAsync();
+
+                    Debug.Log("Client left the room.");
+                }
+            }
+        }
+        catch (Exception e)
+        {
+            Debug.LogError("Failed to leave or delete the room.");
+            Debug.LogException(e);
+        }
+        finally
+        {
+            // Clear shared session references so an old room
+            // cannot accidentally be reused.
+            if (SharedSession.CurrentSession == currentSession)
+                SharedSession.CurrentSession = null;
+
+            currentSession = null;
+
+            // Return to the menu even if the session operation failed.
+            Time.timeScale = 1f;
+            Cursor.lockState = CursorLockMode.None;
+            Cursor.visible = true;
+
+            SceneManager.LoadScene(mainMenuSceneName);
         }
     }
 }

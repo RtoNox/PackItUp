@@ -763,7 +763,7 @@ MonoBehaviour:
       m_Calls:
       - m_Target: {fileID: 2077574457}
         m_TargetAssemblyTypeName: RoomJoin, Assembly-CSharp
-        m_MethodName: JoinToMainMenu
+        m_MethodName: ReturnToMainMenu
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -2081,6 +2081,9 @@ MonoBehaviour:
   roomCodeInput: {fileID: 994669890}
   statusText: {fileID: 1499688930}
   joinButton: {fileID: 633177388}
+  returnToMainMenuButton: {fileID: 0}
+  roomSceneName: RoomScene
+  mainMenuSceneName: MainMenu
 --- !u!4 &2077574458
 Transform:
   m_ObjectHideFlags: 0

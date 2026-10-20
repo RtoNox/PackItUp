@@ -1,3 +1,4 @@
+
 using System;
 using System.Threading.Tasks;
 using UnityEngine;
@@ -8,7 +9,6 @@ using Unity.Services.Multiplayer;
 using UnityEngine.SceneManagement;
 using TMPro;
 using System.Collections;
-using UnityEngine.UI;
 
 #if UNITY_EDITOR
 using ParrelSync;
@@ -33,6 +33,10 @@ public class RoomManager : MonoBehaviour
     [Header("Game Settings")]
     [SerializeField] private int maxPlayers = 4;
     [SerializeField] private string gameSceneName = "Map1";
+    [SerializeField] private string mainMenuSceneName = "MainMenu";
+
+    [Header("Room Settings")]
+    [SerializeField] private bool lockRoomWhenGameStarts = true;
 
     public GameObject roomScreenUI;
     public GameObject abilityScreenUI;
@@ -43,13 +47,15 @@ public class RoomManager : MonoBehaviour
     private bool servicesReady;
     private bool creatingRoom;
     private bool roomCreated;
+    private bool leavingRoom;
+    private bool startingGame;
+
     private async void Start()
     {
         if (startButton != null)
             startButton.SetActive(false);
 
-        // A session already exists for this player.
-        // Reuse it instead of creating another room.
+        // Reuse the session created or joined in the previous scene.
         if (SharedSession.CurrentSession != null)
         {
             currentSession = SharedSession.CurrentSession;
@@ -59,13 +65,7 @@ public class RoomManager : MonoBehaviour
 
             Debug.Log("Using existing room: " + currentSession.Code);
 
-            if (roomIDText != null)
-                roomIDText.text = "Room ID: " + currentSession.Code;
-
-            UpdatePlayerCount();
-
-            if (startButton != null)
-                startButton.SetActive(currentSession.IsHost);
+            UpdateRoomUI();
 
             if (statusText != null)
             {
@@ -77,17 +77,16 @@ public class RoomManager : MonoBehaviour
             return;
         }
 
-        // No session exists, so initialize services and create one.
+        // No session exists, so initialize services and create a room.
         if (statusText != null)
             statusText.text = "Initializing services...";
 
         await InitializeUnityServices();
 
         if (servicesReady)
-        {
             await CreateRoom();
-        }
     }
+
     private void Update()
     {
         if (Input.GetKeyDown(KeyCode.Escape) &&
@@ -97,8 +96,13 @@ public class RoomManager : MonoBehaviour
         }
     }
 
+    // =========================================================
+    // ROOM UI STATES
+    // =========================================================
+
     public void ChangeState(RoomState newState)
     {
+        StopAllCoroutines();
         StartCoroutine(TransitionToState(newState));
         currentState = newState;
     }
@@ -149,9 +153,77 @@ public class RoomManager : MonoBehaviour
             abilityScreenUI.SetActive(false);
     }
 
-    public void RoomToMainMenu()
+    // =========================================================
+    // RETURN TO MAIN MENU / LEAVE ROOM
+    // =========================================================
+
+    public async void RoomToMainMenu()
     {
-        SceneManager.LoadScene("MainMenu");
+        if (leavingRoom)
+            return;
+
+        leavingRoom = true;
+
+        if (statusText != null)
+            statusText.text = "Leaving room...";
+
+        // Use the shared reference if this component has none.
+        if (currentSession == null)
+            currentSession = SharedSession.CurrentSession;
+
+        try
+        {
+            if (currentSession != null)
+            {
+                if (currentSession.IsHost)
+                {
+                    // HOST LEAVES:
+                    // Delete the session so nobody can join it again.
+                    Debug.Log("Host is deleting the room.");
+
+                    await currentSession.AsHost().DeleteAsync();
+
+                    Debug.Log("Room deleted successfully.");
+                }
+                else
+                {
+                    // CLIENT LEAVES:
+                    // Remove only this player from the session.
+                    Debug.Log("Client is leaving the room.");
+
+                    await currentSession.LeaveAsync();
+
+                    Debug.Log("Client left the room.");
+                }
+            }
+        }
+        catch (Exception e)
+        {
+            Debug.LogError("Failed to leave or delete the room.");
+            Debug.LogException(e);
+        }
+        finally
+        {
+            // Do not reuse this session when entering another room.
+            if (SharedSession.CurrentSession == currentSession)
+                SharedSession.CurrentSession = null;
+
+            currentSession = null;
+            roomCreated = false;
+
+            // Stop this player's local NGO connection.
+            // The host's session deletion disconnects the other clients.
+            NetworkManager nm = NetworkManager.Singleton;
+
+            if (nm != null && nm.IsListening)
+                nm.Shutdown();
+
+            Time.timeScale = 1f;
+            Cursor.lockState = CursorLockMode.None;
+            Cursor.visible = true;
+
+            SceneManager.LoadScene(mainMenuSceneName);
+        }
     }
 
     // =========================================================
@@ -217,7 +289,7 @@ public class RoomManager : MonoBehaviour
     }
 
     // =========================================================
-    // CREATE ROOM — HOST PATH ONLY
+    // CREATE ROOM — HOST PATH
     // =========================================================
 
     private async Task CreateRoom()
@@ -234,7 +306,8 @@ public class RoomManager : MonoBehaviour
         {
             SessionOptions options = new SessionOptions
             {
-                MaxPlayers = maxPlayers
+                MaxPlayers = maxPlayers,
+                IsLocked = false
             }.WithRelayNetwork();
 
             currentSession =
@@ -253,9 +326,6 @@ public class RoomManager : MonoBehaviour
             Debug.Log("ROOM CREATED: " + currentSession.Code);
 
             UpdateRoomUI();
-
-            if (startButton != null)
-                startButton.SetActive(currentSession.IsHost);
 
             if (statusText != null)
                 statusText.text = "Room created. Waiting for players...";
@@ -277,7 +347,7 @@ public class RoomManager : MonoBehaviour
     }
 
     // =========================================================
-    // ROOM UI
+    // ROOM UI / PLAYER COUNT
     // =========================================================
 
     private void OnSessionChanged()
@@ -296,7 +366,11 @@ public class RoomManager : MonoBehaviour
         UpdatePlayerCount();
 
         if (startButton != null)
-            startButton.SetActive(currentSession.IsHost);
+        {
+            startButton.SetActive(
+                currentSession.IsHost && !startingGame && !leavingRoom
+            );
+        }
     }
 
     private void UpdatePlayerCount()
@@ -335,15 +409,30 @@ public class RoomManager : MonoBehaviour
     // START GAME — HOST ONLY
     // =========================================================
 
-    public void StartGame()
+    public async void StartGame()
     {
-        if (currentSession == null || !currentSession.IsHost)
+        if (startingGame || leavingRoom)
+            return;
+
+        if (currentSession == null)
+        {
+            Debug.LogError("There is no active session.");
+
+            if (statusText != null)
+                statusText.text = "Room session is missing";
+
+            return;
+        }
+
+        if (!currentSession.IsHost)
         {
             Debug.LogWarning("Only the host can start the game.");
             return;
         }
 
-        if (NetworkManager.Singleton == null)
+        NetworkManager nm = NetworkManager.Singleton;
+
+        if (nm == null)
         {
             Debug.LogError("NetworkManager is missing!");
 
@@ -353,7 +442,7 @@ public class RoomManager : MonoBehaviour
             return;
         }
 
-        if (!NetworkManager.Singleton.IsListening)
+        if (!nm.IsListening)
         {
             Debug.LogError("Netcode is not listening.");
 
@@ -363,13 +452,63 @@ public class RoomManager : MonoBehaviour
             return;
         }
 
-        if (statusText != null)
-            statusText.text = "Starting game...";
+        if (nm.SceneManager == null)
+        {
+            Debug.LogError(
+                "Network Scene Management is unavailable. " +
+                "Enable Scene Management in NetworkManager."
+            );
 
-        NetworkManager.Singleton.SceneManager.LoadScene(
-            gameSceneName,
-            LoadSceneMode.Single
-        );
+            if (statusText != null)
+                statusText.text = "Network scene management unavailable";
+
+            return;
+        }
+
+        startingGame = true;
+
+        if (startButton != null)
+            startButton.SetActive(false);
+
+        if (statusText != null)
+            statusText.text = "Preparing game...";
+
+        try
+        {
+            // Lock the room so nobody new can join once the game starts.
+            if (lockRoomWhenGameStarts)
+            {
+                IHostSession hostSession = currentSession.AsHost();
+
+                hostSession.IsLocked = true;
+
+                await hostSession.SavePropertiesAsync();
+            }
+
+            if (statusText != null)
+                statusText.text = "Starting game...";
+
+            // Keep the session alive for the players already in the game.
+            nm.SceneManager.LoadScene(
+                gameSceneName,
+                LoadSceneMode.Single
+            );
+
+            Debug.Log("Game scene load requested: " + gameSceneName);
+        }
+        catch (Exception e)
+        {
+            Debug.LogError("Failed to start the game.");
+            Debug.LogException(e);
+
+            if (statusText != null)
+                statusText.text = "Failed to start game";
+
+            startingGame = false;
+
+            if (startButton != null && currentSession != null)
+                startButton.SetActive(currentSession.IsHost);
+        }
     }
 
     // =========================================================
