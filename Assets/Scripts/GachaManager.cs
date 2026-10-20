@@ -16,6 +16,11 @@ public class GachaManager : MonoBehaviour
     public GameObject gachaScreenUI;
     public GameObject shopScreenUI;
     public GachaMenuState currentState { get; private set; }
+
+    private void Start()
+    {
+        ChangeState(GachaMenuState.GachaScreen);
+    }
     
     void Update()
     {
