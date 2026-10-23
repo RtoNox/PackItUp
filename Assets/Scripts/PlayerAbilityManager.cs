@@ -46,18 +46,21 @@ public class PlayerAbilityManager : NetworkBehaviour
         AbilityJammer jammerComp = GetComponent<AbilityJammer>();
         AbilityWarp warpComp = GetComponent<AbilityWarp>();
         AbilityBehindYou behindYouComp = GetComponent<AbilityBehindYou>();
+        AbilityDuckKun duckKunComp = GetComponent<AbilityDuckKun>();
 
+        // Matikan semua ability terlebih dahulu
         if (stealComp != null) stealComp.enabled = false;
         if (stunComp != null) stunComp.enabled = false;
         if (jammerComp != null) jammerComp.enabled = false;
         if (warpComp != null) warpComp.enabled = false;
         if (behindYouComp != null) behindYouComp.enabled = false;
+        if (duckKunComp != null) duckKunComp.enabled = false; 
 
-        ConfigureSingleAbility(ability1, stealComp, stunComp, jammerComp, warpComp, behindYouComp, KeyCode.Q);
-        ConfigureSingleAbility(ability2, stealComp, stunComp, jammerComp, warpComp, behindYouComp, KeyCode.E);
+        ConfigureSingleAbility(ability1, stealComp, stunComp, jammerComp, warpComp, behindYouComp, duckKunComp, KeyCode.Q);
+        ConfigureSingleAbility(ability2, stealComp, stunComp, jammerComp, warpComp, behindYouComp, duckKunComp, KeyCode.E);
     }
 
-    private void ConfigureSingleAbility(string abilityName, AbilitySteal steal, AbilityStun stun, AbilityJammer jammer, AbilityWarp warp, AbilityBehindYou behindYou, KeyCode assignedKey)
+    private void ConfigureSingleAbility(string abilityName, AbilitySteal steal, AbilityStun stun, AbilityJammer jammer, AbilityWarp warp, AbilityBehindYou behindYou, AbilityDuckKun duckKun, KeyCode assignedKey)
     {
         if (string.IsNullOrEmpty(abilityName)) return;
 
@@ -88,6 +91,12 @@ public class PlayerAbilityManager : NetworkBehaviour
         {
             behindYou.enabled = true;
             behindYou.assignedKey = assignedKey;
+        }
+        else if ((string.Equals(cleanName, "Duck-Kun", System.StringComparison.OrdinalIgnoreCase) || 
+                  string.Equals(cleanName, "DuckKun", System.StringComparison.OrdinalIgnoreCase)) && duckKun != null)
+        {
+            duckKun.enabled = true;
+            duckKun.assignedKey = assignedKey;
         }
     }
 }

@@ -15,12 +15,18 @@ public class PlayerPoints : NetworkBehaviour
         if (!IsServer)
             return;
 
-        Points.Value += amount;
+        AbilityDuckKun duckKun = GetComponent<AbilityDuckKun>();
+
+        float multiplier = (duckKun != null && duckKun.enabled && duckKun.isBuffActive) ? duckKun.scoreMultiplier.Value : 1.0f;
+
+        int finalPoints = Mathf.RoundToInt(amount * multiplier);
+
+        Points.Value += finalPoints;
 
         Debug.Log(
             "Player " +
             OwnerClientId +
-            " now has " +
+            " mendapat " + finalPoints + " poin (Base: " + amount + " x Multiplier: " + multiplier + "). Total sekarang: " +
             Points.Value +
             " point(s)."
         );

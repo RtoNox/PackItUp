@@ -300,6 +300,7 @@ GameObject:
   - component: {fileID: 3858305257336768631}
   - component: {fileID: -6375580035062565083}
   - component: {fileID: 5928411088714904542}
+  - component: {fileID: 4652963551967482938}
   m_Layer: 0
   m_Name: Player
   m_TagString: Player
@@ -685,6 +686,28 @@ MonoBehaviour:
   ShowTopMostFoldoutHeaderGroup: 1
   cooldownTime: 30
   assignedKey: 102
+--- !u!114 &4652963551967482938
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7154400492277183936}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2b1c4db73381f454d9d9b10cac1b6475, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::AbilityDuckKun
+  ShowTopMostFoldoutHeaderGroup: 1
+  cooldownTime: 90
+  assignedKey: 113
+  switchTargetKey: 116
+  abilityLevel: 1
+  scoreMultiplier:
+    UpdateTraits:
+      MinSecondsBetweenUpdates: 0
+      MaxSecondsBetweenUpdates: 0
+    m_InternalValue: 1.5
 --- !u!1 &8904885298641192656
 GameObject:
   m_ObjectHideFlags: 0

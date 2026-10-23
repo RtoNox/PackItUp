@@ -7,10 +7,6 @@ using TMPro;
 
 public class AbilityManager : MonoBehaviour
 {
-    // [Header("UI Panels")]
-    // public GameObject mainMenuPanel;
-    // public GameObject settingsPanel;
-    // public GameObject abilitySelectionPanel;
 
     [Header("UI Text Status Slots (Opsional)")]
     public TMP_Text slot1Text; 
@@ -22,6 +18,7 @@ public class AbilityManager : MonoBehaviour
     public TMP_Text btnTextJammer;
     public TMP_Text btnTextWarp;
     public TMP_Text btnTextBehindYou;
+    public TMP_Text btnTextDuckKun; 
 
     [Header("UI Text Level Indicator")]
     public TMP_Text stealLevelText;
@@ -29,35 +26,14 @@ public class AbilityManager : MonoBehaviour
     public TMP_Text jammerLevelText;
     public TMP_Text warpLevelText;
     public TMP_Text behindYouLevelText;
+    public TMP_Text duckKunLevelText; 
 
     void Start()
     {
-        // string currentSceneName = SceneManager.GetActiveScene().name;
-
-        // if (currentSceneName == "Ability")
-        // {
-        //     if (abilitySelectionPanel != null) abilitySelectionPanel.SetActive(true);
-        //     if (mainMenuPanel != null) mainMenuPanel.SetActive(false);
-        //     if (settingsPanel != null) settingsPanel.SetActive(false);
-        // }
-        // else
-        // {
-        //     OpenMainMenu();
-        // }
-
         UpdateAllUI();
     }
 
-    // public void OpenMainMenu()
-    // {
-    //     if (mainMenuPanel != null) mainMenuPanel.SetActive(true);
-    //     if (settingsPanel != null) settingsPanel.SetActive(false);
-    //     if (abilitySelectionPanel != null) abilitySelectionPanel.SetActive(false);
-    // }
 
-    // ==========================================
-    // LOGIKA TOMBOL BACK CERDAS
-    // ==========================================
 
     public void OnBackFromAbilityPanel()
     {
@@ -71,8 +47,6 @@ public class AbilityManager : MonoBehaviour
         Debug.Log($"[AbilityUI] Tombol Back diklik. Kembali ke scene: {targetScene}");
         SceneManager.LoadScene(targetScene);
     }
-
-
 
     public void OnAbilityButtonClicked(string abilityName)
     {
@@ -124,8 +98,6 @@ public class AbilityManager : MonoBehaviour
         }
     }
 
-
-
     private void UpdateAllUI()
     {
         // 1. Status Slot Q & E
@@ -141,6 +113,7 @@ public class AbilityManager : MonoBehaviour
         UpdateSingleButtonText("Jammer", btnTextJammer);
         UpdateSingleButtonText("Warp", btnTextWarp);
         UpdateSingleButtonText("Behind You", btnTextBehindYou);
+        UpdateSingleButtonText("Duck-Kun", btnTextDuckKun); 
 
         // 3. Teks Level Indicator
         if (stealLevelText != null) stealLevelText.text = $"Lv {AbilityDataHolder.LevelSteal}";
@@ -148,6 +121,7 @@ public class AbilityManager : MonoBehaviour
         if (jammerLevelText != null) jammerLevelText.text = $"Lv {AbilityDataHolder.LevelJammer}";
         if (warpLevelText != null) warpLevelText.text = $"Lv {AbilityDataHolder.LevelWarp}";
         if (behindYouLevelText != null) behindYouLevelText.text = $"Lv {AbilityDataHolder.LevelBehindYou}";
+        if (duckKunLevelText != null) duckKunLevelText.text = $"Lv {AbilityDataHolder.GetLevel("Duck-Kun")}"; 
     }
 
     private void UpdateSingleButtonText(string abilityName, TMP_Text buttonText)
@@ -155,12 +129,10 @@ public class AbilityManager : MonoBehaviour
         if (buttonText == null) return;
 
         bool isEquipped = AbilityDataHolder.SelectedAbility1.Equals(abilityName, System.StringComparison.OrdinalIgnoreCase) ||
-                         AbilityDataHolder.SelectedAbility2.Equals(abilityName, System.StringComparison.OrdinalIgnoreCase);
+                          AbilityDataHolder.SelectedAbility2.Equals(abilityName, System.StringComparison.OrdinalIgnoreCase);
 
         buttonText.text = isEquipped ? "UnEquip" : "Equip";
     }
-
-
 
     public void UpgradeAbility(string abilityName)
     {
@@ -169,10 +141,10 @@ public class AbilityManager : MonoBehaviour
         Debug.Log($"[Upgrade] Ability {abilityName} sekarang Level {AbilityDataHolder.GetLevel(abilityName)}!");
     }
 
-
     public void ClickSteal() { OnAbilityButtonClicked("Steal"); }
     public void ClickStun() { OnAbilityButtonClicked("Stun"); }
     public void ClickJammer() { OnAbilityButtonClicked("Jammer"); }
     public void ClickWarp() { OnAbilityButtonClicked("Warp"); }
     public void ClickBehindYou() { OnAbilityButtonClicked("Behind You"); }
+    public void ClickDuckKun() { OnAbilityButtonClicked("Duck-Kun"); } // <--- TAMBAHAN DUCK-KUN
 }
