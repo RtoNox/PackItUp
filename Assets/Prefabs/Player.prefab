@@ -621,6 +621,10 @@ MonoBehaviour:
   stunDuration: 5
   cooldownTime: 30
   assignedKey: 114
+  headVfxPrefab: {fileID: 1183195612302425797, guid: 35ab848bd3a189649ba1a0cf40a70ed7,
+    type: 3}
+  bodyLightningPrefab: {fileID: 7673817314284649098, guid: 943e75118cfe336478b0f269f7c24f6c,
+    type: 3}
 --- !u!114 &5145043764894669988
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -708,6 +712,7 @@ MonoBehaviour:
       MinSecondsBetweenUpdates: 0
       MaxSecondsBetweenUpdates: 0
     m_InternalValue: 1.5
+  isBuffActive: 0
 --- !u!1 &8904885298641192656
 GameObject:
   m_ObjectHideFlags: 0

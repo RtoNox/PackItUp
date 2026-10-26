@@ -15,6 +15,10 @@ public class AbilityStun : NetworkBehaviour
     [Header("Input Settings")]
     public KeyCode assignedKey = KeyCode.E;
 
+    [Header("VFX Settings")]
+    public GameObject headVfxPrefab;     // Tarik prefab partikel kepala ke sini
+    public GameObject bodyLightningPrefab; // Tarik prefab 'Lighting_Stun' ke sini
+
     public float GetRemainingCooldown()
     {
         float timeSinceLastUse = Time.time - lastUseTime;
@@ -116,21 +120,44 @@ public class AbilityStun : NetworkBehaviour
 
     private IEnumerator StunRoutine(GameObject target, float duration)
     {
+        // 1. Matikan movement player
         MonoBehaviour playerMovement = target.GetComponent<PlayerMovement>();
         if (playerMovement != null) playerMovement.enabled = false;
 
+        List<GameObject> spawnedVfxList = new List<GameObject>();
 
-        CharacterController charController = target.GetComponent<CharacterController>();
+        // 2. Munculkan VFX di Kepala (dengan offset Y lebih tinggi)
+        if (headVfxPrefab != null)
+        {
+            Vector3 headPosition = target.transform.position + new Vector3(0, 2.0f, 0);
+            GameObject headVfx = Instantiate(headVfxPrefab, headPosition, Quaternion.identity, target.transform);
+            spawnedVfxList.Add(headVfx);
+        }
 
+        // 3. Munculkan VFX Petir di Area Badan (posisi pusat atau offset dada Y + 1.0f)
+        if (bodyLightningPrefab != null)
+        {
+            Vector3 bodyPosition = target.transform.position + new Vector3(0, 1.0f, 0);
+            GameObject bodyVfx = Instantiate(bodyLightningPrefab, bodyPosition, Quaternion.identity, target.transform);
+            spawnedVfxList.Add(bodyVfx);
+        }
 
         Debug.Log($"[Stun] Player {target.name} sedang terkena Stun!");
 
         // Tunggu selama durasi stun
         yield return new WaitForSeconds(duration);
 
+        // 4. Hancurkan semua VFX setelah durasi stun selesai
+        foreach (GameObject vfx in spawnedVfxList)
+        {
+            if (vfx != null)
+            {
+                Destroy(vfx);
+            }
+        }
 
+        // 5. Nyalakan kembali movement player
         if (playerMovement != null) playerMovement.enabled = true;
-        
 
         Debug.Log($"[Stun] Efek Stun pada {target.name} telah selesai.");
     }
