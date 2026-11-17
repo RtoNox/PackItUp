@@ -1,8 +1,9 @@
-using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 using Unity.Netcode;
+using UnityEngine.SceneManagement;
 
-public class PlayerSpawnManager : MonoBehaviour
+public class PlayerSpawnManager : NetworkBehaviour
 {
     [Header("Player")]
     [SerializeField] private GameObject playerPrefab;
@@ -10,218 +11,42 @@ public class PlayerSpawnManager : MonoBehaviour
     [Header("Spawn Points")]
     [SerializeField] private Transform[] spawnPoints;
 
-    private bool initialized = false;
-
-    private void Start()
+    public override void OnNetworkSpawn()
     {
-        StartCoroutine(InitializeSpawner());
+        if (!IsServer) return;
+
+        // Wait until all connected clients have finished loading Map1
+        NetworkManager.Singleton.SceneManager.OnLoadEventCompleted += OnSceneLoadCompleted;
     }
 
-    private IEnumerator InitializeSpawner()
+    public override void OnNetworkDespawn()
     {
-        // Wait for NetworkManager to be ready
-        while (NetworkManager.Singleton == null)
+        if (IsServer && NetworkManager.Singleton != null && NetworkManager.Singleton.SceneManager != null)
         {
-            yield return null;
-        }
-
-        Debug.Log("PlayerSpawnManager: NetworkManager found.");
-
-        // Wait until the network is actually running
-        while (!NetworkManager.Singleton.IsListening)
-        {
-            yield return null;
-        }
-
-        Debug.Log("PlayerSpawnManager: Network is running.");
-
-        // Only the server should spawn players
-        if (!NetworkManager.Singleton.IsServer)
-        {
-            Debug.Log("PlayerSpawnManager: I am NOT the server.");
-            yield break;
-        }
-
-        // Check references
-        if (playerPrefab == null)
-        {
-            Debug.LogError(
-                "PlayerSpawnManager: Player Prefab is NOT assigned!"
-            );
-
-            yield break;
-        }
-
-        if (spawnPoints == null || spawnPoints.Length == 0)
-        {
-            Debug.LogError(
-                "PlayerSpawnManager: No spawn points assigned!"
-            );
-
-            yield break;
-        }
-
-        // Subscribe to future clients
-        NetworkManager.Singleton.OnClientConnectedCallback +=
-            OnClientConnected;
-
-        initialized = true;
-
-        Debug.Log(
-            "PlayerSpawnManager: Ready. Connected clients: " +
-            NetworkManager.Singleton.ConnectedClientsList.Count
-        );
-
-        // Spawn players that are already connected
-        foreach (
-            NetworkClient client
-            in NetworkManager.Singleton.ConnectedClientsList
-        )
-        {
-            Debug.Log(
-                "Existing client found: " +
-                client.ClientId
-            );
-
-            StartCoroutine(
-                SpawnPlayer(client.ClientId)
-            );
+            NetworkManager.Singleton.SceneManager.OnLoadEventCompleted -= OnSceneLoadCompleted;
         }
     }
 
-    private void OnDestroy()
+    private void OnSceneLoadCompleted(string sceneName, LoadSceneMode loadSceneMode, List<ulong> clientsCompleted, List<ulong> clientsTimedOut)
     {
-        if (NetworkManager.Singleton != null)
+        if (!IsServer) return;
+
+        for (int i = 0; i < clientsCompleted.Count; i++)
         {
-            NetworkManager.Singleton.OnClientConnectedCallback -=
-                OnClientConnected;
+            ulong clientId = clientsCompleted[i];
+            SpawnPlayer(clientId, i);
         }
     }
 
-    private void OnClientConnected(ulong clientId)
+    private void SpawnPlayer(ulong clientId, int spawnIndex)
     {
-        if (!initialized)
-            return;
+        if (!NetworkManager.Singleton.ConnectedClients.ContainsKey(clientId)) return;
+        if (NetworkManager.Singleton.ConnectedClients[clientId].PlayerObject != null) return;
 
-        if (NetworkManager.Singleton == null)
-            return;
+        Transform spawnPoint = spawnPoints[spawnIndex % spawnPoints.Length];
 
-        if (!NetworkManager.Singleton.IsServer)
-            return;
-
-        Debug.Log(
-            "Client connected: " +
-            clientId
-        );
-
-        StartCoroutine(
-            SpawnPlayer(clientId)
-        );
-    }
-
-    private IEnumerator SpawnPlayer(ulong clientId)
-    {
-        // Give NGO one frame to finish registering the client
-        yield return null;
-
-        if (NetworkManager.Singleton == null)
-            yield break;
-
-        if (!NetworkManager.Singleton.IsServer)
-            yield break;
-
-        // Make sure client still exists
-        if (!NetworkManager.Singleton.ConnectedClients.ContainsKey(clientId))
-        {
-            Debug.LogWarning(
-                "Client " +
-                clientId +
-                " is no longer connected."
-            );
-
-            yield break;
-        }
-
-        NetworkClient client =
-            NetworkManager.Singleton.ConnectedClients[clientId];
-
-        // Prevent duplicate PlayerObjects
-        if (client.PlayerObject != null)
-        {
-            Debug.Log(
-                "PlayerObject already exists for client " +
-                clientId
-            );
-
-            yield break;
-        }
-
-        // Check spawn points again
-        if (spawnPoints == null ||
-            spawnPoints.Length == 0)
-        {
-            Debug.LogError(
-                "PlayerSpawnManager: No spawn points!"
-            );
-
-            yield break;
-        }
-
-        // Choose spawn point based on client ID
-        int spawnIndex =
-            (int)(clientId % (ulong)spawnPoints.Length);
-
-        Transform spawnPoint =
-            spawnPoints[spawnIndex];
-
-        if (spawnPoint == null)
-        {
-            Debug.LogError(
-                "SpawnPoint " +
-                (spawnIndex + 1) +
-                " is NULL!"
-            );
-
-            yield break;
-        }
-
-        // Create player
-        GameObject player = Instantiate(
-            playerPrefab,
-            spawnPoint.position,
-            spawnPoint.rotation
-        );
-
-        if (player == null)
-        {
-            Debug.LogError(
-                "PlayerSpawnManager: Failed to instantiate Player!"
-            );
-
-            yield break;
-        }
-
-        NetworkObject networkObject =
-            player.GetComponent<NetworkObject>();
-
-        if (networkObject == null)
-        {
-            Debug.LogError(
-                "Player Prefab does not have a NetworkObject!"
-            );
-
-            Destroy(player);
-            yield break;
-        }
-
-        // Spawn as this client's PlayerObject
-        networkObject.SpawnAsPlayerObject(clientId);
-
-        Debug.Log(
-            "SUCCESS: Player " +
-            clientId +
-            " spawned at SpawnPoint " +
-            (spawnIndex + 1)
-        );
+        GameObject player = Instantiate(playerPrefab, spawnPoint.position, spawnPoint.rotation);
+        NetworkObject netObj = player.GetComponent<NetworkObject>();
+        netObj.SpawnAsPlayerObject(clientId);
     }
 }
