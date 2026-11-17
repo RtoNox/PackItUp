@@ -12,16 +12,18 @@ public enum MainMenuState
     MainMenuScreen,
     ShopScreen,
     AbilityScreen,
-    ProfileScreen
+    ProfileScreen,
+    InventoryScreen
 }
 
 public class MainMenu : MonoBehaviour
 {
-    [Header("Menu Panels")]
+    [Header("Menu Screens")]
     public GameObject mainMenuScreenUI;
     public GameObject shopScreenUI;
     public GameObject abilityScreenUI;
     public GameObject profileScreenUI;
+    public GameObject inventoryScreenUI; // Drag your InventoryPanel here
 
     [Header("Profile")]
     [SerializeField] private TMP_InputField playerNameInput;
@@ -85,6 +87,18 @@ public class MainMenu : MonoBehaviour
         ChangeState(MainMenuState.MainMenuScreen);
     }
 
+    // Your existing button wired to GoToBaju() will now open the InventoryPanel
+    public void GoToBaju()
+    {
+        ChangeState(MainMenuState.InventoryScreen);
+    }
+
+    // Hook your InventoryPanel's BackButton to this method
+    public void InventoryToMainMenu()
+    {
+        ChangeState(MainMenuState.MainMenuScreen);
+    }
+
     private void HandleStateChange()
     {
         HideAllMenu();
@@ -111,22 +125,20 @@ public class MainMenu : MonoBehaviour
                 {
                     profileScreenUI.SetActive(true);
 
-                    Debug.Log(
-                        "Profile activeSelf: " +
-                        profileScreenUI.activeSelf
-                    );
-
-                    Debug.Log(
-                        "Profile activeInHierarchy: " +
-                        profileScreenUI.activeInHierarchy
-                    );
+                    Debug.Log("Profile activeSelf: " + profileScreenUI.activeSelf);
+                    Debug.Log("Profile activeInHierarchy: " + profileScreenUI.activeInHierarchy);
                 }
                 else
                 {
-                    Debug.LogError(
-                        "ProfileScreenUI is not assigned in the Inspector!"
-                    );
+                    Debug.LogError("ProfileScreenUI is not assigned in the Inspector!");
                 }
+                break;
+
+            case MainMenuState.InventoryScreen:
+                if (inventoryScreenUI != null)
+                    inventoryScreenUI.SetActive(true);
+                else
+                    Debug.LogError("InventoryScreenUI is not assigned in the Inspector!");
                 break;
         }
     }
@@ -144,6 +156,9 @@ public class MainMenu : MonoBehaviour
 
         if (profileScreenUI != null)
             profileScreenUI.SetActive(false);
+
+        if (inventoryScreenUI != null)
+            inventoryScreenUI.SetActive(false);
     }
 
     // =========================================================
@@ -249,11 +264,6 @@ public class MainMenu : MonoBehaviour
     public void GoToBP()
     {
         LoadScene("BP");
-    }
-
-    public void GoToBaju()
-    {
-        LoadScene("Baju");
     }
 
     public void GoToGiveMeMoney()
