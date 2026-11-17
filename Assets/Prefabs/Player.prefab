@@ -302,6 +302,7 @@ GameObject:
   - component: {fileID: 5928411088714904542}
   - component: {fileID: 4652963551967482938}
   - component: {fileID: 2344530436813783721}
+  - component: {fileID: -7945247086340036308}
   m_Layer: 0
   m_Name: Player
   m_TagString: Player
@@ -709,13 +710,16 @@ MonoBehaviour:
   selfMultiplier: 2
   enemyDebuffDuration: 30
   enemyMultiplier: 0.7
-  isBuffActive: 0
+  isBuffActive:
+    UpdateTraits:
+      MinSecondsBetweenUpdates: 0
+      MaxSecondsBetweenUpdates: 0
+    m_InternalValue: 0
   scoreMultiplier:
     UpdateTraits:
       MinSecondsBetweenUpdates: 0
       MaxSecondsBetweenUpdates: 0
     m_InternalValue: 1.5
-  uiControllerPanel: {fileID: 0}
   assignedKey: 113
 --- !u!114 &2344530436813783721
 MonoBehaviour:
@@ -734,6 +738,27 @@ MonoBehaviour:
   - {fileID: 944380387153413436}
   playerCamera: {fileID: 0}
   playerAudioListener: {fileID: 0}
+--- !u!114 &-7945247086340036308
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7154400492277183936}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0c49f2bb768de4d4d8b5f91d9a160026, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::AbilityMarionette
+  ShowTopMostFoldoutHeaderGroup: 1
+  cooldownTime: 60
+  maxDuration: 30
+  currentLevel: 1
+  bonusMultiplierPerLevel: 0.05
+  obstacleLayer:
+    serializedVersion: 2
+    m_Bits: 64
+  assignedKey: 102
 --- !u!1 &8904885298641192656
 GameObject:
   m_ObjectHideFlags: 0

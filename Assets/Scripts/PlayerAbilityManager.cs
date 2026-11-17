@@ -47,6 +47,7 @@ public class PlayerAbilityManager : NetworkBehaviour
         AbilityWarp warpComp = GetComponent<AbilityWarp>();
         AbilityBehindYou behindYouComp = GetComponent<AbilityBehindYou>();
         AbilityDuckKun duckKunComp = GetComponent<AbilityDuckKun>();
+        AbilityMarionette marionetteComp = GetComponent<AbilityMarionette>(); // Ditambahkan untuk Marionette
 
         // Matikan semua ability terlebih dahulu
         if (stealComp != null) stealComp.enabled = false;
@@ -55,12 +56,13 @@ public class PlayerAbilityManager : NetworkBehaviour
         if (warpComp != null) warpComp.enabled = false;
         if (behindYouComp != null) behindYouComp.enabled = false;
         if (duckKunComp != null) duckKunComp.enabled = false; 
+        if (marionetteComp != null) marionetteComp.enabled = false; // Ditambahkan untuk Marionette
 
-        ConfigureSingleAbility(ability1, stealComp, stunComp, jammerComp, warpComp, behindYouComp, duckKunComp, KeyCode.Q);
-        ConfigureSingleAbility(ability2, stealComp, stunComp, jammerComp, warpComp, behindYouComp, duckKunComp, KeyCode.E);
+        ConfigureSingleAbility(ability1, stealComp, stunComp, jammerComp, warpComp, behindYouComp, duckKunComp, marionetteComp, KeyCode.Q);
+        ConfigureSingleAbility(ability2, stealComp, stunComp, jammerComp, warpComp, behindYouComp, duckKunComp, marionetteComp, KeyCode.E);
     }
 
-    private void ConfigureSingleAbility(string abilityName, AbilitySteal steal, AbilityStun stun, AbilityJammer jammer, AbilityWarp warp, AbilityBehindYou behindYou, AbilityDuckKun duckKun, KeyCode assignedKey)
+    private void ConfigureSingleAbility(string abilityName, AbilitySteal steal, AbilityStun stun, AbilityJammer jammer, AbilityWarp warp, AbilityBehindYou behindYou, AbilityDuckKun duckKun, AbilityMarionette marionette, KeyCode assignedKey)
     {
         if (string.IsNullOrEmpty(abilityName)) return;
 
@@ -87,16 +89,21 @@ public class PlayerAbilityManager : NetworkBehaviour
             warp.assignedKey = assignedKey;
         }
         else if ((string.Equals(cleanName, "Behind You", System.StringComparison.OrdinalIgnoreCase) || 
-                  string.Equals(cleanName, "BehindYou", System.StringComparison.OrdinalIgnoreCase)) && behindYou != null)
+                 string.Equals(cleanName, "BehindYou", System.StringComparison.OrdinalIgnoreCase)) && behindYou != null)
         {
             behindYou.enabled = true;
             behindYou.assignedKey = assignedKey;
         }
         else if ((string.Equals(cleanName, "Duck-Kun", System.StringComparison.OrdinalIgnoreCase) || 
-                  string.Equals(cleanName, "DuckKun", System.StringComparison.OrdinalIgnoreCase)) && duckKun != null)
+                 string.Equals(cleanName, "DuckKun", System.StringComparison.OrdinalIgnoreCase)) && duckKun != null)
         {
             duckKun.enabled = true;
             duckKun.assignedKey = assignedKey;
+        }
+        else if (string.Equals(cleanName, "Marionette", System.StringComparison.OrdinalIgnoreCase) && marionette != null)
+        {
+            marionette.enabled = true;
+            marionette.assignedKey = assignedKey; // Akan otomatis menyesuaikan tombol Q atau E dari slot loadout
         }
     }
 }

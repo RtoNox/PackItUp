@@ -10,25 +10,53 @@ public class PlayerPoints : NetworkBehaviour
             NetworkVariableWritePermission.Server
         );
 
+    // Menyimpan NetworkObjectReference dari player yang sedang mengaitkan Marionette ke player ini
+    public NetworkVariable<NetworkObjectReference> marionetteCasterRef = new NetworkVariable<NetworkObjectReference>(
+        default,
+        NetworkVariableReadPermission.Everyone,
+        NetworkVariableWritePermission.Server
+    );
+
     public void AddPoints(int amount)
     {
         if (!IsServer)
             return;
 
         AbilityDuckKun duckKun = GetComponent<AbilityDuckKun>();
+        float multiplier = 1.0f;
 
-        float multiplier = (duckKun != null && duckKun.enabled && duckKun.isBuffActive.Value) ? duckKun.scoreMultiplier.Value : 1.0f;
+        if (duckKun != null && duckKun.enabled && duckKun.isBuffActive.Value)
+        {
+            multiplier = duckKun.scoreMultiplier.Value;
+        }
 
         int finalPoints = Mathf.RoundToInt(amount * multiplier);
 
+        // CEK APAKAH PLAYER INI SEDANG DIKAITKAN OLEH MARIONETTE MILIK ORANG LAIN
+        if (marionetteCasterRef.Value.TryGet(out NetworkObject casterNetObj))
+        {
+            PlayerPoints casterPoints = casterNetObj.GetComponent<PlayerPoints>();
+            if (casterPoints != null)
+            {
+                // Poin DIALIHKAN/DICURI ke Caster (Player A), Target (Player B) tidak dapat apa-apa
+                casterPoints.Points.Value += finalPoints;
+
+                Debug.Log(
+                    $"[Marionette] Poin DICURI! Player {OwnerClientId} mendapat 0 poin. " +
+                    $"Sebanyak {finalPoints} poin dialihkan ke Caster (Player {casterNetObj.OwnerClientId}). " +
+                    $"Total poin Caster sekarang: {casterPoints.Points.Value}."
+                );
+                return; // Keluar agar poin tidak masuk ke player ini
+            }
+        }
+
+        // Jika tidak sedang di-Marionette, poin masuk normal ke diri sendiri
         Points.Value += finalPoints;
 
         Debug.Log(
-            "Player " +
-            OwnerClientId +
-            " mendapat " + finalPoints + " poin (Base: " + amount + " x Multiplier: " + multiplier + "). Total sekarang: " +
-            Points.Value +
-            " point(s)."
+            "Player " + OwnerClientId +
+            " mendapat " + finalPoints + " poin (Base: " + amount + " x Multiplier: " + multiplier + "). " +
+            "Total sekarang: " + Points.Value + " point(s)."
         );
     }
 }

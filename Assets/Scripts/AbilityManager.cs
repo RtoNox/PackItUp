@@ -7,7 +7,6 @@ using TMPro;
 
 public class AbilityManager : MonoBehaviour
 {
-
     [Header("UI Text Status Slots (Opsional)")]
     public TMP_Text slot1Text; 
     public TMP_Text slot2Text; 
@@ -19,6 +18,7 @@ public class AbilityManager : MonoBehaviour
     public TMP_Text btnTextWarp;
     public TMP_Text btnTextBehindYou;
     public TMP_Text btnTextDuckKun; 
+    public TMP_Text btnTextMarionette; // <--- TAMBAHAN UNTUK MARIONETTE
 
     [Header("UI Text Level Indicator")]
     public TMP_Text stealLevelText;
@@ -27,13 +27,12 @@ public class AbilityManager : MonoBehaviour
     public TMP_Text warpLevelText;
     public TMP_Text behindYouLevelText;
     public TMP_Text duckKunLevelText; 
+    public TMP_Text marionetteLevelText; // <--- TAMBAHAN UNTUK MARIONETTE
 
     void Start()
     {
         UpdateAllUI();
     }
-
-
 
     public void OnBackFromAbilityPanel()
     {
@@ -114,6 +113,7 @@ public class AbilityManager : MonoBehaviour
         UpdateSingleButtonText("Warp", btnTextWarp);
         UpdateSingleButtonText("Behind You", btnTextBehindYou);
         UpdateSingleButtonText("Duck-Kun", btnTextDuckKun); 
+        UpdateSingleButtonText("Marionette", btnTextMarionette); // <--- TAMBAHAN UNTUK MARIONETTE
 
         // 3. Teks Level Indicator
         if (stealLevelText != null) stealLevelText.text = $"Lv {AbilityDataHolder.LevelSteal}";
@@ -122,6 +122,7 @@ public class AbilityManager : MonoBehaviour
         if (warpLevelText != null) warpLevelText.text = $"Lv {AbilityDataHolder.LevelWarp}";
         if (behindYouLevelText != null) behindYouLevelText.text = $"Lv {AbilityDataHolder.LevelBehindYou}";
         if (duckKunLevelText != null) duckKunLevelText.text = $"Lv {AbilityDataHolder.GetLevel("Duck-Kun")}"; 
+        if (marionetteLevelText != null) marionetteLevelText.text = $"Lv {AbilityDataHolder.GetLevel("Marionette")}"; // <--- TAMBAHAN UNTUK MARIONETTE
     }
 
     private void UpdateSingleButtonText(string abilityName, TMP_Text buttonText)
@@ -145,6 +146,7 @@ public class AbilityManager : MonoBehaviour
     public void ClickStun() { OnAbilityButtonClicked("Stun"); }
     public void ClickJammer() { OnAbilityButtonClicked("Jammer"); }
     public void ClickWarp() { OnAbilityButtonClicked("Warp"); }
-    public void ClickBehindYou() { OnAbilityButtonClicked("Behind You"); }
-    public void ClickDuckKun() { OnAbilityButtonClicked("Duck-Kun"); } // <--- TAMBAHAN DUCK-KUN
+    public void ClickBehindYou() { OnAbilityButtonClicked("OnBackFromAbilityPanel" == "X" ? "X" : "Behind You"); }
+    public void ClickDuckKun() { OnAbilityButtonClicked("Duck-Kun"); } 
+    public void ClickMarionette() { OnAbilityButtonClicked("Marionette"); } // <--- TAMBAHAN FUNGSI KLIK MARIONETTE
 }

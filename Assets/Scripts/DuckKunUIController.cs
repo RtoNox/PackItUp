@@ -13,6 +13,7 @@ public class DuckKunUIController : MonoBehaviour
     public TMP_Text[] buttonTexts;
 
     private AbilityDuckKun ownerAbility;
+    private AbilityMarionette marionetteAbility;
 
     void Awake()
     {
@@ -34,6 +35,13 @@ public class DuckKunUIController : MonoBehaviour
     public void Init(AbilityDuckKun ability)
     {
         ownerAbility = ability;
+        marionetteAbility = null; 
+    }
+
+    public void InitMarionette(AbilityMarionette ability)
+    {
+        marionetteAbility = ability;
+        ownerAbility = null; 
     }
 
     public void OpenPanel()
@@ -64,13 +72,21 @@ public class DuckKunUIController : MonoBehaviour
     {
         var spawnedObjects = NetworkManager.Singleton.SpawnManager.SpawnedObjects;
         
+  
+        ulong localClientId = NetworkManager.Singleton.LocalClientId;
+
         int index = 0;
         foreach (var kvp in spawnedObjects)
         {
             NetworkObject netObj = kvp.Value;
             
-            if (netObj.GetComponent<AbilityDuckKun>() != null)
+            if (netObj.CompareTag("Player"))
             {
+                if (marionetteAbility != null && netObj.OwnerClientId == localClientId)
+                {
+                    continue; 
+                }
+
                 if (index < playerButtons.Length)
                 {
                     playerButtons[index].gameObject.SetActive(true);
@@ -112,6 +128,11 @@ public class DuckKunUIController : MonoBehaviour
         {
             ownerAbility.OnTargetSelected(targetNetworkObjectId);
         }
+        else if (marionetteAbility != null)
+        {
+            marionetteAbility.OnTargetSelected(targetNetworkObjectId);
+        }
+        
         ClosePanel();
     }
 }
