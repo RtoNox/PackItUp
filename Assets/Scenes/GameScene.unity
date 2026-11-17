@@ -736,6 +736,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 844fc57ed09468047b387e6fd14507bd, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerSpawner
+  ShowTopMostFoldoutHeaderGroup: 1
   playerPrefab: {fileID: 7154400492277183936, guid: 466fd89d9b4e6e2498198ad23820b674,
     type: 3}
   spawnPoints:

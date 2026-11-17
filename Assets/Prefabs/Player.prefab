@@ -705,15 +705,18 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::AbilityDuckKun
   ShowTopMostFoldoutHeaderGroup: 1
   cooldownTime: 90
-  assignedKey: 113
-  switchTargetKey: 116
-  abilityLevel: 1
+  selfBuffDuration: 60
+  selfMultiplier: 2
+  enemyDebuffDuration: 30
+  enemyMultiplier: 0.7
+  isBuffActive: 0
   scoreMultiplier:
     UpdateTraits:
       MinSecondsBetweenUpdates: 0
       MaxSecondsBetweenUpdates: 0
     m_InternalValue: 1.5
-  isBuffActive: 0
+  uiControllerPanel: {fileID: 0}
+  assignedKey: 113
 --- !u!114 &2344530436813783721
 MonoBehaviour:
   m_ObjectHideFlags: 0

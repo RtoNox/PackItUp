@@ -52,54 +52,61 @@ public class AbilityBehindYou : NetworkBehaviour
             return;
         }
 
-        bool success = false;
-        GameObject targetPlayer = null;
-        float shortestDistance = Mathf.Infinity;
+        // List untuk menampung semua player lain yang ada di map
+        List<GameObject> validTargets = new List<GameObject>();
 
-        Collider[] hitColliders = Physics.OverlapSphere(transform.position, 10000f); // Radius
-        foreach (var hit in hitColliders)
+        var spawnedObjects = NetworkManager.Singleton.SpawnManager.SpawnedObjects;
+        foreach (var kvp in spawnedObjects)
         {
-            if (hit.gameObject != gameObject && hit.CompareTag("Player"))
+            NetworkObject netObj = kvp.Value;
+            
+            // Masukkan objek yang memiliki komponen AbilityBehindYou (atau tag Player) dan bukan diri sendiri
+            if (netObj.gameObject != gameObject && netObj.CompareTag("Player"))
             {
-                float distance = Vector3.Distance(transform.position, hit.transform.position);
-                if (distance < shortestDistance)
-                {
-                    shortestDistance = distance;
-                    targetPlayer = hit.gameObject;
-                }
+                validTargets.Add(netObj.gameObject);
             }
         }
 
-        if (targetPlayer != null)
+        if (validTargets.Count > 0)
         {
+            // Pilih secara acak (random) satu player dari daftar yang ada di map
+            int randomIndex = Random.Range(0, validTargets.Count);
+            GameObject targetPlayer = validTargets[randomIndex];
+
+            // Hitung posisi di belakang target
             Vector3 targetPosition = targetPlayer.transform.position - (targetPlayer.transform.forward * 1.5f);
             targetPosition.y = targetPlayer.transform.position.y;
 
-            CharacterController charController = GetComponent<CharacterController>();
-            Component netTransform = GetComponent("ClientNetworkTransform");
+            // Jalankan perpindahan dan sinkronkan ke semua client
+            ExecuteTeleportClientRpc(targetPosition, targetPlayer.transform.position);
 
-            if (netTransform != null) ((Behaviour)netTransform).enabled = false;
-            if (charController != null) charController.enabled = false;
-
-            transform.position = targetPosition;
-            transform.LookAt(targetPlayer.transform);
-
-            if (charController != null) charController.enabled = true;
-            if (netTransform != null) ((Behaviour)netTransform).enabled = true;
-
-            Debug.Log($"[BehindYou] Berhasil berpindah ke belakang player {targetPlayer.name}!");
-            success = true;
-        }
-
-        if (success)
-        {
             lastUseTime = Time.time;
             TriggerCooldownClientRpc(Time.time);
+
+            Debug.Log($"[BehindYou] Berpindah secara acak ke belakang player {targetPlayer.name}!");
         }
         else
         {
-            Debug.Log("[BehindYou] Tidak ada target player lain di dekat Anda! Skill tidak masuk cooldown.");
+            Debug.Log("[BehindYou] Tidak ada player lain di map! Skill tidak masuk cooldown.");
         }
+    }
+
+    [ClientRpc]
+    private void ExecuteTeleportClientRpc(Vector3 newPosition, Vector3 targetPos)
+    {
+        CharacterController charController = GetComponent<CharacterController>();
+        Component netTransform = GetComponent("ClientNetworkTransform");
+
+        // Nonaktifkan sementara komponen pengatur posisi agar teleport tidak diblokir
+        if (netTransform != null) ((Behaviour)netTransform).enabled = false;
+        if (charController != null) charController.enabled = false;
+
+        transform.position = newPosition;
+        transform.LookAt(new Vector3(targetPos.x, transform.position.y, targetPos.z));
+
+        // Nyalakan kembali komponennya
+        if (charController != null) charController.enabled = true;
+        if (netTransform != null) ((Behaviour)netTransform).enabled = true;
     }
 
     [ClientRpc]

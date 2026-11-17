@@ -17,7 +17,7 @@ public class PlayerPoints : NetworkBehaviour
 
         AbilityDuckKun duckKun = GetComponent<AbilityDuckKun>();
 
-        float multiplier = (duckKun != null && duckKun.enabled && duckKun.isBuffActive) ? duckKun.scoreMultiplier.Value : 1.0f;
+        float multiplier = (duckKun != null && duckKun.enabled && duckKun.isBuffActive.Value) ? duckKun.scoreMultiplier.Value : 1.0f;
 
         int finalPoints = Mathf.RoundToInt(amount * multiplier);
 
