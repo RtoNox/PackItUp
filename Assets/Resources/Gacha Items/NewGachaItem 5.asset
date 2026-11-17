@@ -15,5 +15,6 @@ MonoBehaviour:
   itemID: AURAAAAAAAAAAAAA
   itemName: Trails
   rarity: 2
+  clothingType: 5
   icon: {fileID: 0}
   modelPrefab: {fileID: 0}

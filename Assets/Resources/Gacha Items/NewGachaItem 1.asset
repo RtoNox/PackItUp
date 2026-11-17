@@ -15,5 +15,6 @@ MonoBehaviour:
   itemID: Pants_1
   itemName: Pants
   rarity: 0
+  clothingType: 1
   icon: {fileID: 0}
   modelPrefab: {fileID: 0}

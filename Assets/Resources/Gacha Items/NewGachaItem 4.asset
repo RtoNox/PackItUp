@@ -15,5 +15,6 @@ MonoBehaviour:
   itemID: WOAH KEREN BANGET JIR CAPENYA
   itemName: Cape
   rarity: 1
+  clothingType: 4
   icon: {fileID: 0}
   modelPrefab: {fileID: 0}
