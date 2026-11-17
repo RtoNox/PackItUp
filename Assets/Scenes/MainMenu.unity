@@ -14116,9 +14116,39 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1037413499533374652, guid: c3087764cbe29104d821eb3f8e559371,
         type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.size
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 1037413499533374652, guid: c3087764cbe29104d821eb3f8e559371,
+        type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Target
       value: 
-      objectReference: {fileID: 7773983488439131319}
+      objectReference: {fileID: 6676481658273828463}
+    - target: {fileID: 1037413499533374652, guid: c3087764cbe29104d821eb3f8e559371,
+        type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_MethodName
+      value: Close
+      objectReference: {fileID: 0}
+    - target: {fileID: 1037413499533374652, guid: c3087764cbe29104d821eb3f8e559371,
+        type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_TargetAssemblyTypeName
+      value: InventoryUI, Assembly-CSharp
+      objectReference: {fileID: 0}
+    - target: {fileID: 1037413499533374652, guid: c3087764cbe29104d821eb3f8e559371,
+        type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Arguments.m_ObjectArgumentAssemblyTypeName
+      value: UnityEngine.Object, UnityEngine
+      objectReference: {fileID: 0}
+    - target: {fileID: 5076536368140818903, guid: c3087764cbe29104d821eb3f8e559371,
+        type: 3}
+      propertyPath: onClose.m_PersistentCalls.m_Calls.Array.size
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5076536368140818903, guid: c3087764cbe29104d821eb3f8e559371,
+        type: 3}
+      propertyPath: onClose.m_PersistentCalls.m_Calls.Array.data[0].m_CallState
+      value: 2
+      objectReference: {fileID: 0}
     - target: {fileID: 5751483723889233018, guid: c3087764cbe29104d821eb3f8e559371,
         type: 3}
       propertyPath: m_Name
@@ -14129,6 +14159,18 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: c3087764cbe29104d821eb3f8e559371, type: 3}
+--- !u!114 &6676481658273828463 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 5076536368140818903, guid: c3087764cbe29104d821eb3f8e559371,
+    type: 3}
+  m_PrefabInstance: {fileID: 6676481658273828462}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1426206415}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2894d1687a0b6e648a856e4ab13c6c6b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::InventoryUI
 --- !u!114 &7773983488439131319 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 5233713523640926230, guid: 0f113d1b3f4745b41b79f6450a29a3c0,

@@ -478,10 +478,9 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 5233713523640926230, guid: 0f113d1b3f4745b41b79f6450a29a3c0,
-          type: 3}
-        m_TargetAssemblyTypeName: MainMenu, Assembly-CSharp
-        m_MethodName: GoToBaju
+      - m_Target: {fileID: 1379849869}
+        m_TargetAssemblyTypeName: InventoryUI, Assembly-CSharp
+        m_MethodName: Open
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -1006,6 +1005,21 @@ PrefabInstance:
         type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1037413499533374652, guid: c3087764cbe29104d821eb3f8e559371,
+        type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Target
+      value: 
+      objectReference: {fileID: 1379849869}
+    - target: {fileID: 1037413499533374652, guid: c3087764cbe29104d821eb3f8e559371,
+        type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_MethodName
+      value: Close
+      objectReference: {fileID: 0}
+    - target: {fileID: 1037413499533374652, guid: c3087764cbe29104d821eb3f8e559371,
+        type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_TargetAssemblyTypeName
+      value: InventoryUI, Assembly-CSharp
       objectReference: {fileID: 0}
     - target: {fileID: 2310000275648296801, guid: c3087764cbe29104d821eb3f8e559371,
         type: 3}
@@ -3862,6 +3876,18 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1348198234}
   m_CullTransparentMesh: 1
+--- !u!114 &1379849869 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 5076536368140818903, guid: c3087764cbe29104d821eb3f8e559371,
+    type: 3}
+  m_PrefabInstance: {fileID: 494908494}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2894d1687a0b6e648a856e4ab13c6c6b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::InventoryUI
 --- !u!1 &1427110883
 GameObject:
   m_ObjectHideFlags: 0

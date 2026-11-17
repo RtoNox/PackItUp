@@ -1,20 +1,34 @@
 using System;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.Events;
 using TMPro;
 
 public class InventoryUI : MonoBehaviour
 {
     [Header("Inventory List Setup")]
-    [Tooltip("The Content transform of your ScrollView or Vertical/Grid Layout Group.")]
     [SerializeField] private Transform slotContainer;
-
-    [Tooltip("A simple UI Button prefab with a child TMP_Text.")]
     [SerializeField] private GameObject slotButtonPrefab;
 
-    [Header("Equipped Loadout Display (Shows all 6 slots)")]
+    [Header("Equipped Loadout Display")]
     [SerializeField] private TMP_Text equippedLoadoutText;
 
+    [Header("Optional Scene Callback")]
+    [Tooltip("Leave empty in RoomScene/GachaScene. In MainMenu, hook InventoryToMainMenu() here.")]
+    public UnityEvent onClose;
+
+    public void Open()
+    {
+        gameObject.SetActive(true);
+    }
+
+    public void Close()
+    {
+        gameObject.SetActive(false);
+        onClose?.Invoke();
+    }
+
+    // ... keep your existing OnEnable, OnDisable, RefreshUI, and UpdateEquippedLoadoutText methods ...
     private void OnEnable()
     {
         if (PlayerInventory.Instance != null)
