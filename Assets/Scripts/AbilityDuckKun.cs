@@ -30,6 +30,10 @@ public class AbilityDuckKun : NetworkBehaviour
         NetworkVariableWritePermission.Server
     );
 
+    [Header("Targeting Settings")]
+    [Tooltip("Nama objek indikator di dalam prefab Player")]
+    public string targetIndicatorName = "Duck-KunIndicator";
+
     [Header("Input Settings")]
     public KeyCode assignedKey = KeyCode.Q; 
 
@@ -38,6 +42,16 @@ public class AbilityDuckKun : NetworkBehaviour
         float timeSinceLastUse = Time.time - lastUseTime;
         float remaining = cooldownTime - timeSinceLastUse;
         return remaining > 0f ? remaining : 0f;
+    }
+
+    private void Start()
+    {
+        // Pastikan indikator mati saat game dimulai
+        Transform myIndicator = FindDeepChild(transform, targetIndicatorName);
+        if (myIndicator != null)
+        {
+            myIndicator.gameObject.SetActive(false);
+        }
     }
 
     void Update()
@@ -104,11 +118,11 @@ public class AbilityDuckKun : NetworkBehaviour
         if (NetworkManager.Singleton.SpawnManager.SpawnedObjects.TryGetValue(targetNetObjId, out NetworkObject targetNetObj))
         {
             bool isSelf = (targetNetObjId == casterNetObjId);
-            StartCoroutine(DuckKunRoutine(targetNetObj.gameObject, isSelf));
+            StartCoroutine(DuckKunRoutine(targetNetObj.gameObject, isSelf, targetNetObjId));
         }
     }
 
-    private IEnumerator DuckKunRoutine(GameObject target, bool isSelf)
+    private IEnumerator DuckKunRoutine(GameObject target, bool isSelf, ulong targetNetObjId)
     {
         float duration = isSelf ? selfBuffDuration : enemyDebuffDuration;
         float multiplierValue = isSelf ? selfMultiplier : enemyMultiplier;
@@ -116,7 +130,6 @@ public class AbilityDuckKun : NetworkBehaviour
         string effectType = isSelf ? "BUFF (Self)" : "DEBUFF (Enemy)";
         Debug.Log($"[Duck-Kun] {target.name} terkena {effectType}! Multiplier diubah menjadi {multiplierValue} selama {duration} detik.");
 
-        // Ambil komponen AbilityDuckKun milik TARGET yang dipilih (bukan caster)
         AbilityDuckKun targetAbility = target.GetComponent<AbilityDuckKun>();
 
         if (IsServer && targetAbility != null)
@@ -125,7 +138,13 @@ public class AbilityDuckKun : NetworkBehaviour
             targetAbility.scoreMultiplier.Value = multiplierValue;
         }
 
+        // Nyalakan indikator tanda panah di target untuk semua player
+        ToggleTargetIndicatorClientRpc(targetNetObjId, true);
+
         yield return new WaitForSeconds(duration);
+
+        // Matikan indikator tanda panah setelah durasi habis
+        ToggleTargetIndicatorClientRpc(targetNetObjId, false);
 
         if (IsServer && targetAbility != null)
         {
@@ -134,5 +153,36 @@ public class AbilityDuckKun : NetworkBehaviour
         }
 
         Debug.Log($"[Duck-Kun] Efek pada {target.name} telah habis.");
+    }
+
+    [ClientRpc]
+    private void ToggleTargetIndicatorClientRpc(ulong targetNetworkObjectId, bool isActive)
+    {
+        if (NetworkManager.Singleton.SpawnManager.SpawnedObjects.TryGetValue(targetNetworkObjectId, out NetworkObject targetNetObj))
+        {
+            Transform indicator = FindDeepChild(targetNetObj.transform, targetIndicatorName);
+            if (indicator != null)
+            {
+                indicator.gameObject.SetActive(isActive);
+            }
+            else
+            {
+                Debug.LogWarning($"[Duck-Kun] Objek '{targetIndicatorName}' tidak ditemukan pada prefab target!");
+            }
+        }
+    }
+
+    private Transform FindDeepChild(Transform parent, string childName)
+    {
+        foreach (Transform child in parent)
+        {
+            if (child.name == childName)
+                return child;
+
+            Transform result = FindDeepChild(child, childName);
+            if (result != null)
+                return result;
+        }
+        return null;
     }
 }
