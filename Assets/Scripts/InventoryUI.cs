@@ -16,6 +16,7 @@ public class InventoryUI : MonoBehaviour
     [Header("Optional Scene Callback")]
     [Tooltip("Leave empty in RoomScene/GachaScene. In MainMenu, hook InventoryToMainMenu() here.")]
     public UnityEvent onClose;
+    [SerializeField] private GameObject mainMenuPanel;
 
     public void Open()
     {
@@ -25,6 +26,7 @@ public class InventoryUI : MonoBehaviour
     public void Close()
     {
         gameObject.SetActive(false);
+        mainMenuPanel?.SetActive(true);
         onClose?.Invoke();
     }
 
