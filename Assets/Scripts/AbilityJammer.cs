@@ -6,37 +6,34 @@ using Unity.Netcode;
 public class AbilityJammer : NetworkBehaviour
 {
     [Header("Ability Stats")]
-    public float jammerRadius = 6f;
-    public float jammerDuration = 4f;
-    public float cooldownTime = 35f;
+    public float cooldownTime = 40f;
+    public float maxDuration = 10f;
     private float lastUseTime = -999f;
-    private bool wasOnCooldown = false;
+
+    [Header("Visual Indicator & VFX")]
+    public GameObject indicatorXObject; // Assign objek tanda X (bisa World Space UI / Sprite / GameObject 3D)
+    public GameObject jammerVfxPrefab;
+    private GameObject spawnedVfx;
 
     [Header("Input Settings")]
-    public KeyCode assignedKey = KeyCode.Q;
+    public KeyCode assignedKey = KeyCode.E;
 
-    public float GetRemainingCooldown()
+    private void Start()
     {
-        float timeSinceLastUse = Time.time - lastUseTime;
-        float remaining = cooldownTime - timeSinceLastUse;
-        return remaining > 0f ? remaining : 0f;
+        // PENTING: Pastikan indikator X mati saat pertama kali game/player spawn
+        if (indicatorXObject != null)
+        {
+            indicatorXObject.SetActive(false);
+        }
     }
 
     void Update()
     {
         if (!IsOwner) return;
 
-        bool isOnCooldown = Time.time < lastUseTime + cooldownTime;
-
-        if (wasOnCooldown && !isOnCooldown)
-        {
-            Debug.Log("[Jammer] Cooldown selesai! Ability Jammer siap dipakai kembali.");
-        }
-        wasOnCooldown = isOnCooldown;
-
         if (Input.GetKeyDown(assignedKey))
         {
-            if (isOnCooldown)
+            if (Time.time < lastUseTime + cooldownTime)
             {
                 Debug.Log("[Jammer] Skill masih cooldown!");
                 return;
@@ -49,33 +46,30 @@ public class AbilityJammer : NetworkBehaviour
     [ServerRpc]
     private void TryUseJammerServerRpc()
     {
-        if (Time.time < lastUseTime + cooldownTime)
-        {
-            return;
-        }
+        if (Time.time < lastUseTime + cooldownTime) return;
 
-        bool success = false;
-        Collider[] hitColliders = Physics.OverlapSphere(transform.position, jammerRadius);
+        lastUseTime = Time.time;
+        TriggerCooldownClientRpc(Time.time);
+
+        StartCoroutine(JammerRoutine());
+    }
+
+    private IEnumerator JammerRoutine()
+    {
+        Debug.Log("[Jammer] Skill Jammer diaktifkan!");
         
-        foreach (var hit in hitColliders)
+
+        ToggleJammerEffectClientRpc(true);
+
+        float timer = 0f;
+        while (timer < maxDuration)
         {
-            if (hit.gameObject != gameObject && hit.CompareTag("Player"))
-            {
-                Debug.Log($"[Jammer] Berhasil melakukan jammer pada area sekitar target ({hit.gameObject.name}) selama {jammerDuration} detik!");
-                success = true;
-                
-            }
+            timer += Time.deltaTime;
+            yield return null;
         }
 
-        if (success)
-        {
-            lastUseTime = Time.time;
-            TriggerCooldownClientRpc(Time.time);
-        }
-        else
-        {
-            Debug.Log("[Jammer] Tidak ada player lain dalam jangkauan! Skill tidak masuk cooldown.");
-        }
+        ToggleJammerEffectClientRpc(false);
+        Debug.Log("[Jammer] Sesi Jammer berakhir.");
     }
 
     [ClientRpc]
@@ -84,7 +78,31 @@ public class AbilityJammer : NetworkBehaviour
         if (IsOwner)
         {
             lastUseTime = serverTime;
-            wasOnCooldown = true;
+        }
+    }
+
+    [ClientRpc]
+    private void ToggleJammerEffectClientRpc(bool isActive)
+    {
+        if (indicatorXObject != null)
+        {
+            indicatorXObject.SetActive(isActive);
+        }
+        if (isActive)
+        {
+            if (jammerVfxPrefab != null && spawnedVfx == null)
+            {
+                Vector3 spawnPos = transform.position + Vector3.up * 2.0f;
+                spawnedVfx = Instantiate(jammerVfxPrefab, spawnPos, Quaternion.identity, transform);
+            }
+        }
+        else
+        {
+            if (spawnedVfx != null)
+            {
+                Destroy(spawnedVfx);
+                spawnedVfx = null;
+            }
         }
     }
 }
