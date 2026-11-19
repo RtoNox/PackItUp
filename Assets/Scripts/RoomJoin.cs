@@ -1,4 +1,3 @@
-
 using System;
 using System.Threading.Tasks;
 using UnityEngine;
@@ -21,7 +20,6 @@ public class RoomJoin : MonoBehaviour
     [SerializeField] private GameObject returnToMainMenuButton;
 
     [Header("Scene Settings")]
-    [SerializeField] private string roomSceneName = "RoomScene";
     [SerializeField] private string mainMenuSceneName = "MainMenu";
 
     private ISession currentSession;
@@ -36,6 +34,9 @@ public class RoomJoin : MonoBehaviour
 
     private async void Start()
     {
+        SharedSession.IsJoiningAsClient = false;
+        SharedSession.PendingRoomCode = null;
+
         if (joinButton != null)
             joinButton.SetActive(true);
 
@@ -165,35 +166,36 @@ public class RoomJoin : MonoBehaviour
 
         try
         {
-            // Clear any stale session reference before joining.
+            // Clear any stale session reference and flag this instance as a joining client
+            // BEFORE JoinSessionByCodeAsync triggers RoomScene to load.
             SharedSession.CurrentSession = null;
+            SharedSession.IsJoiningAsClient = true;
+            SharedSession.PendingRoomCode = roomCode;
             currentSession = null;
 
-            currentSession =
+            ISession joinedSession =
                 await MultiplayerService.Instance
                     .JoinSessionByCodeAsync(roomCode);
 
-            if (currentSession == null)
+            if (joinedSession == null)
             {
                 throw new Exception(
                     "Joining the session returned null."
                 );
             }
 
-            // Share the session with RoomManager.
-            SharedSession.CurrentSession = currentSession;
+            // Assign immediately on the first line after await so RoomManager receives it
+            // even if RoomScene already finished loading during JoinSessionByCodeAsync.
+            SharedSession.CurrentSession = joinedSession;
+            currentSession = joinedSession;
 
             Debug.Log(
                 "Successfully joined room: " +
-                currentSession.Code
+                joinedSession.Code
             );
 
-            if (statusText != null)
+            if (this != null && statusText != null)
                 statusText.text = "Joined room. Loading room...";
-
-            // Prevent the finally block from re-enabling the button
-            // after the scene transition has been requested.
-            SceneManager.LoadScene(roomSceneName);
         }
         catch (Exception e)
         {
@@ -203,19 +205,23 @@ public class RoomJoin : MonoBehaviour
 
             Debug.LogException(e);
 
-            // Clean up references if joining failed.
+            SharedSession.IsJoiningAsClient = false;
+            SharedSession.PendingRoomCode = null;
             SharedSession.CurrentSession = null;
             currentSession = null;
 
-            if (statusText != null)
+            if (this != null)
             {
-                statusText.text =
-                    "Failed to join room. Check the code, " +
-                    "room availability, and player limit.";
-            }
+                if (statusText != null)
+                {
+                    statusText.text =
+                        "Failed to join room. Check the code, " +
+                        "room availability, and player limit.";
+                }
 
-            if (joinButton != null)
-                joinButton.SetActive(true);
+                if (joinButton != null)
+                    joinButton.SetActive(true);
+            }
         }
         finally
         {
@@ -243,7 +249,6 @@ public class RoomJoin : MonoBehaviour
         if (statusText != null)
             statusText.text = "Returning to Main Menu...";
 
-        // Use the shared session if this component doesn't have one.
         if (currentSession == null)
             currentSession = SharedSession.CurrentSession;
 
@@ -253,20 +258,14 @@ public class RoomJoin : MonoBehaviour
             {
                 if (currentSession.IsHost)
                 {
-                    // Host leaves: delete and disband the room.
                     Debug.Log("Host is deleting the room.");
-
                     await currentSession.AsHost().DeleteAsync();
-
                     Debug.Log("Room deleted successfully.");
                 }
                 else
                 {
-                    // Client leaves: remove only this player.
                     Debug.Log("Client is leaving the room.");
-
                     await currentSession.LeaveAsync();
-
                     Debug.Log("Client left the room.");
                 }
             }
@@ -278,14 +277,13 @@ public class RoomJoin : MonoBehaviour
         }
         finally
         {
-            // Clear shared session references so an old room
-            // cannot accidentally be reused.
             if (SharedSession.CurrentSession == currentSession)
                 SharedSession.CurrentSession = null;
 
+            SharedSession.IsJoiningAsClient = false;
+            SharedSession.PendingRoomCode = null;
             currentSession = null;
 
-            // Return to the menu even if the session operation failed.
             Time.timeScale = 1f;
             Cursor.lockState = CursorLockMode.None;
             Cursor.visible = true;

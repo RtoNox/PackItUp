@@ -55,6 +55,29 @@ public class RoomManager : MonoBehaviour
         if (startButton != null)
             startButton.SetActive(false);
 
+        bool isClient = SharedSession.IsJoiningAsClient ||
+            (NetworkManager.Singleton != null &&
+             NetworkManager.Singleton.IsClient &&
+             !NetworkManager.Singleton.IsHost);
+
+        // If joining as a client, show the entered code right away and wait
+        // for JoinSessionByCodeAsync to finish assigning SharedSession.CurrentSession.
+        if (isClient && SharedSession.CurrentSession == null)
+        {
+            if (roomIDText != null && !string.IsNullOrEmpty(SharedSession.PendingRoomCode))
+                roomIDText.text = "Room ID: " + SharedSession.PendingRoomCode;
+
+            if (statusText != null)
+                statusText.text = "Joining room...";
+
+            float timeout = 10f;
+            while (SharedSession.CurrentSession == null && timeout > 0f)
+            {
+                timeout -= Time.deltaTime;
+                await Task.Yield();
+            }
+        }
+
         // Reuse the session created or joined in the previous scene.
         if (SharedSession.CurrentSession != null)
         {
@@ -77,7 +100,16 @@ public class RoomManager : MonoBehaviour
             return;
         }
 
-        // No session exists, so initialize services and create a room.
+        // Hard guard: never allow a client to create a separate room.
+        if (isClient)
+        {
+            Debug.LogWarning("RoomManager: Client is in RoomScene without an ISession reference; skipping CreateRoom().");
+            if (statusText != null)
+                statusText.text = "Joined room. Waiting for host...";
+            return;
+        }
+
+        // Host path: no session exists, so initialize services and create a room.
         if (statusText != null)
             statusText.text = "Initializing services...";
 

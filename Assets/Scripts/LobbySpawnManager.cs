@@ -15,15 +15,17 @@ public class LobbySpawnManager : NetworkBehaviour
 
     public override void OnNetworkSpawn()
     {
-        if (!IsServer) return;
-
-        NetworkManager.Singleton.OnClientConnectedCallback += OnClientConnected;
-        NetworkManager.Singleton.OnClientDisconnectCallback += OnClientDisconnected;
-
-        // Spawn anyone already connected (such as the Host)
-        foreach (ulong clientId in NetworkManager.Singleton.ConnectedClientsIds)
+        if (IsServer)
         {
-            SpawnLobbyPlayer(clientId);
+            NetworkManager.Singleton.OnClientDisconnectCallback += OnClientDisconnected;
+
+            // Spawn the Host immediately
+            SpawnLobbyPlayer(NetworkManager.Singleton.LocalClientId);
+        }
+        else if (IsClient)
+        {
+            // Client has finished loading RoomScene — ask the Server to spawn our character now
+            RequestLobbySpawnServerRpc();
         }
     }
 
@@ -31,14 +33,14 @@ public class LobbySpawnManager : NetworkBehaviour
     {
         if (IsServer && NetworkManager.Singleton != null)
         {
-            NetworkManager.Singleton.OnClientConnectedCallback -= OnClientConnected;
             NetworkManager.Singleton.OnClientDisconnectCallback -= OnClientDisconnected;
         }
     }
 
-    private void OnClientConnected(ulong clientId)
+    [ServerRpc(RequireOwnership = false)]
+    private void RequestLobbySpawnServerRpc(ServerRpcParams rpcParams = default)
     {
-        if (!IsServer) return;
+        ulong clientId = rpcParams.Receive.SenderClientId;
         SpawnLobbyPlayer(clientId);
     }
 
@@ -50,6 +52,8 @@ public class LobbySpawnManager : NetworkBehaviour
 
     private void SpawnLobbyPlayer(ulong clientId)
     {
+        if (!IsServer) return;
+
         if (lobbyPlayerPrefab == null || lobbySpawnPoints == null || lobbySpawnPoints.Length == 0)
         {
             Debug.LogError("LobbySpawnManager: Missing prefab or spawn points!");
