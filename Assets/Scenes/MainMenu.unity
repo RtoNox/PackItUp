@@ -3565,6 +3565,18 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 698266275}
   m_CullTransparentMesh: 1
+--- !u!114 &705687035 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: -2901192063355772113, guid: 466fd89d9b4e6e2498198ad23820b674,
+    type: 3}
+  m_PrefabInstance: {fileID: 599719234}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 26272e6284e479d4386dc7e0c0a3ddb5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerName
 --- !u!1 &724162417
 GameObject:
   m_ObjectHideFlags: 0
@@ -11860,6 +11872,11 @@ PrefabInstance:
       propertyPath: inventoryScreenUI
       value: 
       objectReference: {fileID: 1426206415}
+    - target: {fileID: 5233713523640926230, guid: 0f113d1b3f4745b41b79f6450a29a3c0,
+        type: 3}
+      propertyPath: showcasePlayerName
+      value: 
+      objectReference: {fileID: 705687035}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -12086,7 +12103,7 @@ PrefabInstance:
     - target: {fileID: 6194609036085770900, guid: c3087764cbe29104d821eb3f8e559371,
         type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: -249.99925
+      value: -250.00003
       objectReference: {fileID: 0}
     - target: {fileID: 8576869610851870830, guid: c3087764cbe29104d821eb3f8e559371,
         type: 3}

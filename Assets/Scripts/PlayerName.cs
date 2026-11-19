@@ -18,6 +18,16 @@ public class PlayerName : NetworkBehaviour
             NetworkVariableWritePermission.Server
         );
 
+    private void Start()
+    {
+        // In MainMenu there is no active Netcode session, so OnNetworkSpawn() won't run.
+        // Load the local saved name directly for the showcase character.
+        if (!IsSpawned)
+        {
+            RefreshLocalName();
+        }
+    }
+
     public override void OnNetworkSpawn()
     {
         playerName.OnValueChanged += OnNameChanged;
@@ -42,6 +52,15 @@ public class PlayerName : NetworkBehaviour
     private void OnDestroy()
     {
         playerName.OnValueChanged -= OnNameChanged;
+    }
+
+    // Call this from your Profile Save button so the MainMenu character updates immediately
+    public void RefreshLocalName()
+    {
+        if (!IsSpawned)
+        {
+            UpdateNameText(GetSavedPlayerName());
+        }
     }
 
     private string GetSavedPlayerName()
@@ -129,7 +148,6 @@ public class PlayerName : NetworkBehaviour
 
     public string PlayerNameValue
     {
-        get {return playerName.Value.ToString();}
+        get { return playerName.Value.ToString(); }
     }
-
 }

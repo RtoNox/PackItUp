@@ -28,6 +28,7 @@ public class MainMenu : MonoBehaviour
     [Header("Profile")]
     [SerializeField] private TMP_InputField playerNameInput;
     [SerializeField] private TMP_Text savedNameText;
+    [SerializeField] private PlayerName showcasePlayerName; // Optional: auto-found if left empty
 
     public MainMenuState currentState { get; private set; }
 
@@ -196,6 +197,8 @@ public class MainMenu : MonoBehaviour
         if (savedNameText != null)
             savedNameText.text = "Player Name: " + playerName;
 
+        RefreshShowcasePlayerName();
+
         Debug.Log(
             "Saved Player Name: " + playerName +
             " | Key: " + playerNameKey
@@ -223,6 +226,17 @@ public class MainMenu : MonoBehaviour
 
         if (savedNameText != null)
             savedNameText.text = "Player Name: " + playerName;
+
+        RefreshShowcasePlayerName();
+    }
+
+    private void RefreshShowcasePlayerName()
+    {
+        if (showcasePlayerName == null)
+            showcasePlayerName = FindFirstObjectByType<PlayerName>();
+
+        if (showcasePlayerName != null)
+            showcasePlayerName.RefreshLocalName();
     }
 
     private string GetPlayerNameKey()
@@ -254,8 +268,6 @@ public class MainMenu : MonoBehaviour
         LoadScene("Gacha");
     }
 
-    // Profile opens the panel instead of loading another scene.
-    // GoToProfile() handles this.
     public void GoToEmotes()
     {
         LoadScene("Emotes");

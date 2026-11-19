@@ -955,6 +955,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PlayerName
   ShowTopMostFoldoutHeaderGroup: 1
   nameText: {fileID: 8605323239582992943}
+  nameTagTransform: {fileID: 0}
 --- !u!114 &6446947020523890436
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1075,8 +1076,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::AbilityDuckKun
   ShowTopMostFoldoutHeaderGroup: 1
   cooldownTime: 90
-  effectDuration: 5
-  castRange: 10
+  selfBuffDuration: 60
+  selfMultiplier: 2
+  enemyDebuffDuration: 30
+  enemyMultiplier: 0.7
   isBuffActive:
     UpdateTraits:
       MinSecondsBetweenUpdates: 0
@@ -1087,12 +1090,7 @@ MonoBehaviour:
       MinSecondsBetweenUpdates: 0
       MaxSecondsBetweenUpdates: 0
     m_InternalValue: 1.5
-  enemyDebuffDuration: 30
-  enemyMultiplier: 0.7
   targetIndicatorName: Duck-KunIndicator
-  playerLayer:
-    serializedVersion: 2
-    m_Bits: 0
   assignedKey: 113
 --- !u!114 &2344530436813783721
 MonoBehaviour:
