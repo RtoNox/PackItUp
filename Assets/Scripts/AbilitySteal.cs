@@ -3,23 +3,32 @@ using System.Collections.Generic;
 using UnityEngine;
 using Unity.Netcode;
 
-public class AbilitySteal : NetworkBehaviour
+public class AbilitySteal : NetworkBehaviour, IAbilityCooldown
 {
-    [Header("Ability Stats")]
+    [Header("Ability Info & Cooldown")]
+    public string abilityName = "Steal";
+    public Sprite abilityIcon;
     public float range = 2f;
     public float cooldownTime = 30f;
+
     private float lastUseTime = -999f;
+    private float clientCooldownEndTime = -1f;
     private bool wasOnCooldown = false;
 
     [Header("Input Settings")]
-    public KeyCode assignedKey = KeyCode.F;
+    public KeyCode assignedKey = KeyCode.Q;
 
     [Header("Upgrade Settings")]
     [Range(1, 3)] public int abilityLevel = 1;
 
     [Header("Visual Effects")]
     [Tooltip("Masukkan Prefab Partikel efek Steal yang muncul di pemain korban")]
-    public GameObject stealHitVfxPrefab; 
+    public GameObject stealHitVfxPrefab;
+
+    public string AbilityName => abilityName;
+    public Sprite AbilityIcon => abilityIcon;
+    public float CooldownDuration => cooldownTime;
+    public KeyCode AssignedKey => assignedKey;
 
     public float GetStealPercentage()
     {
@@ -34,16 +43,26 @@ public class AbilitySteal : NetworkBehaviour
 
     public float GetRemainingCooldown()
     {
-        float timeSinceLastUse = Time.time - lastUseTime;
-        float remaining = cooldownTime - timeSinceLastUse;
-        return remaining > 0f ? remaining : 0f;
+        if (IsServer)
+        {
+            float remainingServer = (lastUseTime + cooldownTime) - Time.time;
+            return remainingServer > 0f ? remainingServer : 0f;
+        }
+
+        if (clientCooldownEndTime > 0f)
+        {
+            float remainingClient = clientCooldownEndTime - Time.time;
+            return remainingClient > 0f ? remainingClient : 0f;
+        }
+
+        return 0f;
     }
 
     void Update()
     {
         if (!IsOwner) return;
 
-        bool isOnCooldown = Time.time < lastUseTime + cooldownTime;
+        bool isOnCooldown = GetRemainingCooldown() > 0f;
 
         if (wasOnCooldown && !isOnCooldown)
         {
@@ -73,7 +92,7 @@ public class AbilitySteal : NetworkBehaviour
 
         bool success = false;
         Collider[] hitColliders = Physics.OverlapSphere(transform.position, range);
-        
+
         foreach (var hit in hitColliders)
         {
             if (hit.gameObject != gameObject && hit.CompareTag("Player"))
@@ -83,11 +102,11 @@ public class AbilitySteal : NetworkBehaviour
 
                 if (targetPoints != null && myPoints != null)
                 {
-                    int targetScore = targetPoints.Points.Value; 
+                    int targetScore = targetPoints.Points.Value;
                     if (targetScore > 0)
                     {
                         int stolenScore = Mathf.RoundToInt(targetScore * GetStealPercentage());
-                        
+
                         targetPoints.Points.Value -= stolenScore;
                         myPoints.Points.Value += stolenScore;
 
@@ -106,12 +125,10 @@ public class AbilitySteal : NetworkBehaviour
             }
         }
 
-
         if (success)
         {
             lastUseTime = Time.time;
-            
-            TriggerCooldownClientRpc(Time.time);
+            TriggerCooldownClientRpc(cooldownTime);
         }
         else
         {
@@ -120,11 +137,11 @@ public class AbilitySteal : NetworkBehaviour
     }
 
     [ClientRpc]
-    private void TriggerCooldownClientRpc(float serverTime)
+    private void TriggerCooldownClientRpc(float duration)
     {
         if (IsOwner)
         {
-            lastUseTime = serverTime;
+            clientCooldownEndTime = Time.time + duration;
             wasOnCooldown = true;
         }
     }

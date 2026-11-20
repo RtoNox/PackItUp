@@ -3,25 +3,51 @@ using System.Collections.Generic;
 using UnityEngine;
 using Unity.Netcode;
 
-public class AbilityMarionette : NetworkBehaviour
+public class AbilityMarionette : NetworkBehaviour, IAbilityCooldown
 {
-    [Header("Ability Stats")]
+    [Header("Ability Info & Cooldown")]
+    public string abilityName = "Marionette";
+    public Sprite abilityIcon;
     public float cooldownTime = 60f;
     public float maxDuration = 30f;
+
     private float lastUseTime = -999f;
+    private float clientCooldownEndTime = -1f;
     private bool wasOnCooldown = false;
 
     [Header("Line of Sight Settings")]
-    public LayerMask obstacleLayer; 
+    public LayerMask obstacleLayer;
 
     [Header("Input Settings")]
-    public KeyCode assignedKey = KeyCode.F; 
+    public KeyCode assignedKey = KeyCode.Q;
+
+    public string AbilityName => abilityName;
+    public Sprite AbilityIcon => abilityIcon;
+    public float CooldownDuration => cooldownTime;
+    public KeyCode AssignedKey => assignedKey;
+
+    public float GetRemainingCooldown()
+    {
+        if (IsServer)
+        {
+            float remainingServer = (lastUseTime + cooldownTime) - Time.time;
+            return remainingServer > 0f ? remainingServer : 0f;
+        }
+
+        if (clientCooldownEndTime > 0f)
+        {
+            float remainingClient = clientCooldownEndTime - Time.time;
+            return remainingClient > 0f ? remainingClient : 0f;
+        }
+
+        return 0f;
+    }
 
     void Update()
     {
         if (!IsOwner) return;
 
-        bool isOnCooldown = Time.time < lastUseTime + cooldownTime;
+        bool isOnCooldown = GetRemainingCooldown() > 0f;
 
         if (wasOnCooldown && !isOnCooldown)
         {
@@ -73,7 +99,7 @@ public class AbilityMarionette : NetworkBehaviour
         if (targetNetObj != null && targetNetObj.gameObject != gameObject)
         {
             lastUseTime = Time.time;
-            TriggerCooldownClientRpc(Time.time);
+            TriggerCooldownClientRpc(cooldownTime);
 
             StartCoroutine(MarionetteRoutine(gameObject, targetNetObj.gameObject));
         }
@@ -131,24 +157,24 @@ public class AbilityMarionette : NetworkBehaviour
             if (observer == caster || observer == target) continue;
             if (!observer.CompareTag("Player")) continue;
 
-            Vector3 observerPos = observer.transform.position + Vector3.up * 1.5f; 
-            Vector3 targetPos = target.transform.position + Vector3.up * 1.0f;     
+            Vector3 observerPos = observer.transform.position + Vector3.up * 1.5f;
+            Vector3 targetPos = target.transform.position + Vector3.up * 1.0f;
 
             if (!Physics.Linecast(observerPos, targetPos, obstacleLayer))
             {
-                return true; 
+                return true;
             }
         }
 
-        return false; 
+        return false;
     }
 
     [ClientRpc]
-    private void TriggerCooldownClientRpc(float serverTime)
+    private void TriggerCooldownClientRpc(float duration)
     {
         if (IsOwner)
         {
-            lastUseTime = serverTime;
+            clientCooldownEndTime = Time.time + duration;
             wasOnCooldown = true;
         }
     }

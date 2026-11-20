@@ -3,28 +3,47 @@ using System.Collections.Generic;
 using UnityEngine;
 using Unity.Netcode;
 
-public class AbilityBehindYou : NetworkBehaviour
+public class AbilityBehindYou : NetworkBehaviour, IAbilityCooldown
 {
-    [Header("Ability Stats")]
+    [Header("Ability Info & Cooldown")]
+    public string abilityName = "Behind You";
+    public Sprite abilityIcon;
     public float cooldownTime = 40f;
+
     private float lastUseTime = -999f;
+    private float clientCooldownEndTime = -1f;
     private bool wasOnCooldown = false;
 
     [Header("Input Settings")]
-    public KeyCode assignedKey = KeyCode.R; 
+    public KeyCode assignedKey = KeyCode.E;
+
+    public string AbilityName => abilityName;
+    public Sprite AbilityIcon => abilityIcon;
+    public float CooldownDuration => cooldownTime;
+    public KeyCode AssignedKey => assignedKey;
 
     public float GetRemainingCooldown()
     {
-        float timeSinceLastUse = Time.time - lastUseTime;
-        float remaining = cooldownTime - timeSinceLastUse;
-        return remaining > 0f ? remaining : 0f;
+        if (IsServer)
+        {
+            float remainingServer = (lastUseTime + cooldownTime) - Time.time;
+            return remainingServer > 0f ? remainingServer : 0f;
+        }
+
+        if (clientCooldownEndTime > 0f)
+        {
+            float remainingClient = clientCooldownEndTime - Time.time;
+            return remainingClient > 0f ? remainingClient : 0f;
+        }
+
+        return 0f;
     }
 
     void Update()
     {
         if (!IsOwner) return;
 
-        bool isOnCooldown = Time.time < lastUseTime + cooldownTime;
+        bool isOnCooldown = GetRemainingCooldown() > 0f;
 
         if (wasOnCooldown && !isOnCooldown)
         {
@@ -59,7 +78,7 @@ public class AbilityBehindYou : NetworkBehaviour
         foreach (var kvp in spawnedObjects)
         {
             NetworkObject netObj = kvp.Value;
-            
+
             // Masukkan objek yang memiliki komponen AbilityBehindYou (atau tag Player) dan bukan diri sendiri
             if (netObj.gameObject != gameObject && netObj.CompareTag("Player"))
             {
@@ -81,7 +100,7 @@ public class AbilityBehindYou : NetworkBehaviour
             ExecuteTeleportClientRpc(targetPosition, targetPlayer.transform.position);
 
             lastUseTime = Time.time;
-            TriggerCooldownClientRpc(Time.time);
+            TriggerCooldownClientRpc(cooldownTime);
 
             Debug.Log($"[BehindYou] Berpindah secara acak ke belakang player {targetPlayer.name}!");
         }
@@ -110,11 +129,11 @@ public class AbilityBehindYou : NetworkBehaviour
     }
 
     [ClientRpc]
-    private void TriggerCooldownClientRpc(float serverTime)
+    private void TriggerCooldownClientRpc(float duration)
     {
         if (IsOwner)
         {
-            lastUseTime = serverTime;
+            clientCooldownEndTime = Time.time + duration;
             wasOnCooldown = true;
         }
     }

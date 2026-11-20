@@ -3,13 +3,17 @@ using System.Collections.Generic;
 using UnityEngine;
 using Unity.Netcode;
 
-public class AbilityStun : NetworkBehaviour
+public class AbilityStun : NetworkBehaviour, IAbilityCooldown
 {
-    [Header("Ability Stats")]
+    [Header("Ability Info & Cooldown")]
+    public string abilityName = "Stun";
+    public Sprite abilityIcon;
     public float range = 5f;
     public float stunDuration = 3f;
     public float cooldownTime = 25f;
+
     private float lastUseTime = -999f;
+    private float clientCooldownEndTime = -1f;
     private bool wasOnCooldown = false;
 
     [Header("Input Settings")]
@@ -19,18 +23,33 @@ public class AbilityStun : NetworkBehaviour
     public GameObject headVfxPrefab;     // Tarik prefab partikel kepala ke sini
     public GameObject bodyLightningPrefab; // Tarik prefab 'Lighting_Stun' ke sini
 
+    public string AbilityName => abilityName;
+    public Sprite AbilityIcon => abilityIcon;
+    public float CooldownDuration => cooldownTime;
+    public KeyCode AssignedKey => assignedKey;
+
     public float GetRemainingCooldown()
     {
-        float timeSinceLastUse = Time.time - lastUseTime;
-        float remaining = cooldownTime - timeSinceLastUse;
-        return remaining > 0f ? remaining : 0f;
+        if (IsServer)
+        {
+            float remainingServer = (lastUseTime + cooldownTime) - Time.time;
+            return remainingServer > 0f ? remainingServer : 0f;
+        }
+
+        if (clientCooldownEndTime > 0f)
+        {
+            float remainingClient = clientCooldownEndTime - Time.time;
+            return remainingClient > 0f ? remainingClient : 0f;
+        }
+
+        return 0f;
     }
 
     void Update()
     {
         if (!IsOwner) return;
 
-        bool isOnCooldown = Time.time < lastUseTime + cooldownTime;
+        bool isOnCooldown = GetRemainingCooldown() > 0f;
 
         if (wasOnCooldown && !isOnCooldown)
         {
@@ -91,7 +110,7 @@ public class AbilityStun : NetworkBehaviour
         if (success)
         {
             lastUseTime = Time.time;
-            TriggerCooldownClientRpc(Time.time);
+            TriggerCooldownClientRpc(cooldownTime);
         }
         else
         {
@@ -100,11 +119,11 @@ public class AbilityStun : NetworkBehaviour
     }
 
     [ClientRpc]
-    private void TriggerCooldownClientRpc(float serverTime)
+    private void TriggerCooldownClientRpc(float duration)
     {
         if (IsOwner)
         {
-            lastUseTime = serverTime;
+            clientCooldownEndTime = Time.time + duration;
             wasOnCooldown = true;
         }
     }

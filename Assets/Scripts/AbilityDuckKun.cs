@@ -3,19 +3,23 @@ using System.Collections.Generic;
 using UnityEngine;
 using Unity.Netcode;
 
-public class AbilityDuckKun : NetworkBehaviour
+public class AbilityDuckKun : NetworkBehaviour, IAbilityCooldown
 {
-    [Header("Ability Stats")]
+    [Header("Ability Info & Cooldown")]
+    public string abilityName = "Duck-Kun";
+    public Sprite abilityIcon;
     public float cooldownTime = 90f;
+
     private float lastUseTime = -999f;
+    private float clientCooldownEndTime = -1f;
     private bool wasOnCooldown = false;
 
     [Header("Buff/Debuff Settings")]
     public float selfBuffDuration = 60f;
-    public float selfMultiplier = 2.0f; 
+    public float selfMultiplier = 2.0f;
 
     public float enemyDebuffDuration = 30f;
-    public float enemyMultiplier = 0.7f; 
+    public float enemyMultiplier = 0.7f;
 
     [Header("Network Buff Status")]
     public NetworkVariable<bool> isBuffActive = new NetworkVariable<bool>(
@@ -23,7 +27,7 @@ public class AbilityDuckKun : NetworkBehaviour
         NetworkVariableReadPermission.Everyone,
         NetworkVariableWritePermission.Server
     );
-    
+
     public NetworkVariable<float> scoreMultiplier = new NetworkVariable<float>(
         1.0f,
         NetworkVariableReadPermission.Everyone,
@@ -35,18 +39,32 @@ public class AbilityDuckKun : NetworkBehaviour
     public string targetIndicatorName = "Duck-KunIndicator";
 
     [Header("Input Settings")]
-    public KeyCode assignedKey = KeyCode.Q; 
+    public KeyCode assignedKey = KeyCode.Q;
+
+    public string AbilityName => abilityName;
+    public Sprite AbilityIcon => abilityIcon;
+    public float CooldownDuration => cooldownTime;
+    public KeyCode AssignedKey => assignedKey;
 
     public float GetRemainingCooldown()
     {
-        float timeSinceLastUse = Time.time - lastUseTime;
-        float remaining = cooldownTime - timeSinceLastUse;
-        return remaining > 0f ? remaining : 0f;
+        if (IsServer)
+        {
+            float remainingServer = (lastUseTime + cooldownTime) - Time.time;
+            return remainingServer > 0f ? remainingServer : 0f;
+        }
+
+        if (clientCooldownEndTime > 0f)
+        {
+            float remainingClient = clientCooldownEndTime - Time.time;
+            return remainingClient > 0f ? remainingClient : 0f;
+        }
+
+        return 0f;
     }
 
     private void Start()
     {
-        // Pastikan indikator mati saat game dimulai
         Transform myIndicator = FindDeepChild(transform, targetIndicatorName);
         if (myIndicator != null)
         {
@@ -58,7 +76,7 @@ public class AbilityDuckKun : NetworkBehaviour
     {
         if (!IsOwner) return;
 
-        bool isOnCooldown = Time.time < lastUseTime + cooldownTime;
+        bool isOnCooldown = GetRemainingCooldown() > 0f;
 
         if (wasOnCooldown && !isOnCooldown)
         {
@@ -99,15 +117,15 @@ public class AbilityDuckKun : NetworkBehaviour
         lastUseTime = Time.time;
 
         ApplyDuckKunClientRpc(targetNetworkObjectId, NetworkObjectId);
-        TriggerCooldownClientRpc(Time.time);
+        TriggerCooldownClientRpc(cooldownTime);
     }
 
     [ClientRpc]
-    private void TriggerCooldownClientRpc(float serverTime)
+    private void TriggerCooldownClientRpc(float duration)
     {
         if (IsOwner)
         {
-            lastUseTime = serverTime;
+            clientCooldownEndTime = Time.time + duration;
             wasOnCooldown = true;
         }
     }
@@ -138,12 +156,10 @@ public class AbilityDuckKun : NetworkBehaviour
             targetAbility.scoreMultiplier.Value = multiplierValue;
         }
 
-        // Nyalakan indikator tanda panah di target untuk semua player
         ToggleTargetIndicatorClientRpc(targetNetObjId, true);
 
         yield return new WaitForSeconds(duration);
 
-        // Matikan indikator tanda panah setelah durasi habis
         ToggleTargetIndicatorClientRpc(targetNetObjId, false);
 
         if (IsServer && targetAbility != null)
