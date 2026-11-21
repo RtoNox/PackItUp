@@ -8,46 +8,31 @@ using System.Linq;
 
 public class PointCalculator : MonoBehaviour
 {
-    // [SerializeField] private PlayerName localNa;me
-
     public List<PlayerResult> CalculateRankings()
+{
+    var rankedPlayers = FindObjectsOfType<PlayerPoints>().OrderByDescending(p => p.Points.Value).ToArray();
+
+    List<PlayerResult> results = new();
+    int currentRank = 1;
+
+    for (int i = 0; i < rankedPlayers.Length; i++)
     {
-        PlayerPoints[] players = FindObjectsOfType<PlayerPoints>();
+        if (i > 0 && rankedPlayers[i].Points.Value < rankedPlayers[i - 1].Points.Value)
+            currentRank = i + 1;
 
-        var rankedPlayers = players.OrderByDescending(p => p.Points.Value).ToArray();
-
-        for (int i = 0; i < rankedPlayers.Length; i++)
-        {
-            int rank = i + 1;
-        }
-
-        List<PlayerResult> results = new();
-
-        for (int i = 0; i < rankedPlayers.Length; i++)
-        {
-        PlayerName playerNameScript = rankedPlayers[i].GetComponent<PlayerName>();
+        var nameScript = rankedPlayers[i].GetComponent<PlayerName>();
 
         results.Add(new PlayerResult
-         {
-            clientId = rankedPlayers[i].OwnerClientId,
-            playerName = playerNameScript.PlayerNameValue,
-            points = rankedPlayers[i].Points.Value,
-            rank = i + 1
-         });
-        }
-
-        int currentRank = 1;
-
-        for (int i = 0; i < rankedPlayers.Length; i++)
         {
-            if (i > 0 && rankedPlayers[i].Points.Value < rankedPlayers[i - 1].Points.Value)
-         {
-                currentRank = i + 1;
-         }
-        }
+            clientId = rankedPlayers[i].OwnerClientId,
+            playerName = nameScript.PlayerNameValue,
+            points = rankedPlayers[i].Points.Value,
+            rank = currentRank
+        });
+    }
 
-        return results;
-     }
+    return results;
+}
 }
 
 public class PlayerResult

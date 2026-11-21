@@ -46,6 +46,7 @@ public class GameManager : MonoBehaviour
     private bool menuLoading;
 
     private NetworkManager networkManager;
+    private RewardManager rewardManager;
 
     // =========================================================
     // INITIALIZATION
@@ -54,11 +55,14 @@ public class GameManager : MonoBehaviour
     private void Awake()
     {
         instance = this;
+        if (rewardManager == null)
+            rewardManager = GetComponent<RewardManager>();
     }
 
     private void Start()
     {
         Time.timeScale = 1f;
+        rewardManager.ResetForNewRound();
 
         networkManager = NetworkManager.Singleton;
 
@@ -91,8 +95,12 @@ public class GameManager : MonoBehaviour
 
                 if (pointCalculator != null)
                 {
-                    List<PlayerResult> results =
-                        pointCalculator.CalculateRankings();
+                    List<PlayerResult> results = pointCalculator.CalculateRankings();
+
+                    if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsServer)
+                    {
+                        rewardManager.GiveRewards();
+                    }
 
                     ShowResults(results);
                 }
@@ -106,7 +114,6 @@ public class GameManager : MonoBehaviour
             }
         }
 
-        // Escape opens or closes the in-game menu.
         if (Input.GetKeyDown(KeyCode.Escape))
         {
             if (currentState == MenuState.GameScreen)
