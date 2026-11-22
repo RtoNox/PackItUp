@@ -48,6 +48,14 @@ public class PlayerInventory : MonoBehaviour
 
     private const string SAVE_KEY = "Player_Clothing_Inventory_v1";
 
+    [Header("Duplicate Conversion Settings (Adjustable)")]
+    [SerializeField] private CurrencyType duplicateCurrencyType = CurrencyType.Its;
+    [SerializeField] private int duplicateRewardR = 20;
+    [SerializeField] private int duplicateRewardSR = 100;
+    [SerializeField] private int duplicateRewardSSR = 500;
+
+    public CurrencyType DuplicateCurrencyType => duplicateCurrencyType;
+
     // Optional runtime lookup if you attach icons/models later
     private readonly Dictionary<string, GachaItemData> assetLookup = new Dictionary<string, GachaItemData>();
     private InventorySaveData saveData = new InventorySaveData();
@@ -104,7 +112,7 @@ public class PlayerInventory : MonoBehaviour
         SaveInventory();
         OnInventoryChanged?.Invoke();
 
-        Debug.Log($"[Inventory] +1 [{item.rarity}] {item.clothingType}: {item.itemName}");
+        Debug.Log($"[Inventory] +{amount} [{item.rarity}] {item.clothingType}: {item.itemName}");
     }
 
     public List<InventoryEntry> GetAllOwnedItems()
@@ -122,6 +130,82 @@ public class PlayerInventory : MonoBehaviour
     {
         assetLookup.TryGetValue(itemID, out GachaItemData asset);
         return asset;
+    }
+
+    // =========================================================
+    // DUPLICATE CONVERSION
+    // =========================================================
+
+    public int GetDuplicateCurrencyReward(ItemRarity rarity)
+    {
+        switch (rarity)
+        {
+            case ItemRarity.SSR:
+                return duplicateRewardSSR;
+            case ItemRarity.SR:
+                return duplicateRewardSR;
+            case ItemRarity.R:
+            default:
+                return duplicateRewardR;
+        }
+    }
+
+    public void PreviewDuplicateConversion(out int totalDuplicates, out int totalCurrency)
+    {
+        totalDuplicates = 0;
+        totalCurrency = 0;
+
+        foreach (InventoryEntry entry in saveData.entries)
+        {
+            if (entry.count > 1)
+            {
+                int extraCopies = entry.count - 1;
+                totalDuplicates += extraCopies;
+                totalCurrency += extraCopies * GetDuplicateCurrencyReward(entry.rarity);
+            }
+        }
+    }
+
+    public bool ConvertAllDuplicates(out int totalDuplicatesConverted, out int totalCurrencyGained)
+    {
+        totalDuplicatesConverted = 0;
+        totalCurrencyGained = 0;
+
+        foreach (InventoryEntry entry in saveData.entries)
+        {
+            if (entry.count > 1)
+            {
+                int extraCopies = entry.count - 1;
+                int reward = extraCopies * GetDuplicateCurrencyReward(entry.rarity);
+
+                totalDuplicatesConverted += extraCopies;
+                totalCurrencyGained += reward;
+
+                // Keep 1 copy so ownership and equipped clothing remain intact
+                entry.count = 1;
+            }
+        }
+
+        if (totalDuplicatesConverted <= 0)
+            return false;
+
+        if (totalCurrencyGained > 0)
+        {
+            if (CurrencyManager.Instance != null)
+            {
+                CurrencyManager.Instance.AddCurrency(duplicateCurrencyType, totalCurrencyGained);
+            }
+            else
+            {
+                Debug.LogWarning("PlayerInventory: CurrencyManager.Instance not found! Duplicate currency could not be added.");
+            }
+        }
+
+        SaveInventory();
+        OnInventoryChanged?.Invoke();
+
+        Debug.Log($"[Inventory] Converted {totalDuplicatesConverted} duplicate(s) -> +{totalCurrencyGained} {duplicateCurrencyType}");
+        return true;
     }
 
     // =========================================================

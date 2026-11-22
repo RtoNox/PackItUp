@@ -13,6 +13,14 @@ public enum GachaMenuState
 
 public class GachaManager : MonoBehaviour
 {
+    private struct GachaPullResult
+    {
+        public GachaItemData item;
+        public bool isDuplicate;
+        public bool convertedToCurrency;
+        public int convertedCurrency;
+    }
+
     [Header("Menu Screens")]
     public GameObject gachaScreenUI;
     public GameObject shopScreenUI;
@@ -25,6 +33,10 @@ public class GachaManager : MonoBehaviour
     [SerializeField] private float rDropRate = 70f;
     [SerializeField] private float srDropRate = 25f;
     [SerializeField] private float ssrDropRate = 5f;
+
+    [Header("Duplicate Handling")]
+    [Tooltip("Unchecked: duplicates stack in Inventory (x2, x3) for the Convert All button. Checked: auto-converts immediately on pull.")]
+    [SerializeField] private bool autoConvertDuplicatesOnPull = false;
 
     [Header("Gacha Result UI (Optional)")]
     [SerializeField] private GameObject resultPanel;
@@ -62,32 +74,34 @@ public class GachaManager : MonoBehaviour
 
     public void PullOnce()
     {
-        GachaItemData wonItem = RollSingleItem();
-        if (wonItem == null) return;
+        GachaPullResult? result = RollSingleItem();
+        if (!result.HasValue) return;
+
+        GachaPullResult pull = result.Value;
 
         if (resultPanel != null)
             resultPanel.SetActive(true);
 
         if (resultText != null)
-            resultText.text = $"[{wonItem.rarity}] [{wonItem.clothingType}] {wonItem.itemName}";
+            resultText.text = FormatPullResultLine(pull);
 
         if (resultIcon != null)
         {
-            bool hasIcon = wonItem.icon != null;
+            bool hasIcon = pull.item.icon != null;
             resultIcon.gameObject.SetActive(hasIcon);
-            if (hasIcon) resultIcon.sprite = wonItem.icon;
+            if (hasIcon) resultIcon.sprite = pull.item.icon;
         }
     }
 
     public void PullTen()
     {
-        List<GachaItemData> results = new List<GachaItemData>();
+        List<GachaPullResult> results = new List<GachaPullResult>();
 
         for (int i = 0; i < 10; i++)
         {
-            GachaItemData item = RollSingleItem();
-            if (item != null)
-                results.Add(item);
+            GachaPullResult? result = RollSingleItem();
+            if (result.HasValue)
+                results.Add(result.Value);
         }
 
         if (results.Count == 0) return;
@@ -101,9 +115,9 @@ public class GachaManager : MonoBehaviour
         if (resultText != null)
         {
             string summary = "";
-            foreach (GachaItemData item in results)
+            foreach (GachaPullResult pull in results)
             {
-                summary += $"[{item.rarity}] [{item.clothingType}] {item.itemName}\n";
+                summary += FormatPullResultLine(pull) + "\n";
             }
             resultText.text = summary;
         }
@@ -115,11 +129,27 @@ public class GachaManager : MonoBehaviour
             resultPanel.SetActive(false);
     }
 
+    private string FormatPullResultLine(GachaPullResult pull)
+    {
+        string baseInfo = $"[{pull.item.rarity}] [{pull.item.clothingType}] {pull.item.itemName}";
+
+        if (pull.convertedToCurrency)
+        {
+            CurrencyType currencyType = PlayerInventory.Instance.DuplicateCurrencyType;
+            return $"{baseInfo} (Duplicate -> +{pull.convertedCurrency} {currencyType})";
+        }
+
+        if (pull.isDuplicate)
+            return $"{baseInfo} (Duplicate)";
+
+        return $"{baseInfo} (NEW!)";
+    }
+
     // =========================================================
     // CORE GACHA LOGIC
     // =========================================================
 
-    private GachaItemData RollSingleItem()
+    private GachaPullResult? RollSingleItem()
     {
         if (itemPool == null || itemPool.Count == 0)
         {
@@ -141,12 +171,36 @@ public class GachaManager : MonoBehaviour
 
         GachaItemData wonItem = matchingItems[Random.Range(0, matchingItems.Count)];
 
-        // Transfer the pulled item into the player's persistent inventory
+        bool alreadyOwned = !string.IsNullOrEmpty(wonItem.itemID) &&
+                            PlayerInventory.Instance.HasItem(wonItem.itemID);
+
+        if (alreadyOwned && autoConvertDuplicatesOnPull)
+        {
+            int rewardAmount = PlayerInventory.Instance.GetDuplicateCurrencyReward(wonItem.rarity);
+            CurrencyType currencyType = PlayerInventory.Instance.DuplicateCurrencyType;
+
+            if (CurrencyManager.Instance != null)
+                CurrencyManager.Instance.AddCurrency(currencyType, rewardAmount);
+
+            return new GachaPullResult
+            {
+                item = wonItem,
+                isDuplicate = true,
+                convertedToCurrency = true,
+                convertedCurrency = rewardAmount
+            };
+        }
+
+        // Add item (stacks x2, x3... in inventory if already owned)
         PlayerInventory.Instance.AddItem(wonItem, 1);
 
-        Debug.Log($"[Gacha] Pulled [{wonItem.rarity}] {wonItem.itemName} -> Sent to Inventory");
-
-        return wonItem;
+        return new GachaPullResult
+        {
+            item = wonItem,
+            isDuplicate = alreadyOwned,
+            convertedToCurrency = false,
+            convertedCurrency = 0
+        };
     }
 
     private ItemRarity RollRarity()

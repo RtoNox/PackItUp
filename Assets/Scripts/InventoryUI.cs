@@ -13,6 +13,11 @@ public class InventoryUI : MonoBehaviour
     [Header("Equipped Loadout Display")]
     [SerializeField] private TMP_Text equippedLoadoutText;
 
+    [Header("Duplicate Conversion UI")]
+    [SerializeField] private Button convertDuplicatesButton;
+    [SerializeField] private TMP_Text convertDuplicatesButtonText;
+    [SerializeField] private TMP_Text conversionFeedbackText;
+
     [Header("Optional Scene Callback")]
     [Tooltip("Leave empty in RoomScene/GachaScene. In MainMenu, hook InventoryToMainMenu() here.")]
     public UnityEvent onClose;
@@ -30,9 +35,35 @@ public class InventoryUI : MonoBehaviour
         onClose?.Invoke();
     }
 
-    // ... keep your existing OnEnable, OnDisable, RefreshUI, and UpdateEquippedLoadoutText methods ...
+    // Hook your new "Convert All Duplicates" UI Button's OnClick() to this method
+    public void ConvertAllDuplicates()
+    {
+        if (PlayerInventory.Instance == null) return;
+
+        bool converted = PlayerInventory.Instance.ConvertAllDuplicates(
+            out int convertedCount,
+            out int earnedCurrency
+        );
+
+        if (conversionFeedbackText != null)
+        {
+            if (converted)
+            {
+                CurrencyType currencyType = PlayerInventory.Instance.DuplicateCurrencyType;
+                conversionFeedbackText.text = $"Converted {convertedCount} duplicate(s) into +{earnedCurrency} {currencyType}!";
+            }
+            else
+            {
+                conversionFeedbackText.text = "No duplicate items to convert.";
+            }
+        }
+    }
+
     private void OnEnable()
     {
+        if (conversionFeedbackText != null)
+            conversionFeedbackText.text = "";
+
         if (PlayerInventory.Instance != null)
             PlayerInventory.Instance.OnInventoryChanged += RefreshUI;
 
@@ -48,6 +79,7 @@ public class InventoryUI : MonoBehaviour
     public void RefreshUI()
     {
         UpdateEquippedLoadoutText();
+        UpdateDuplicateButtonUI();
 
         if (slotContainer == null || slotButtonPrefab == null) return;
 
@@ -86,6 +118,24 @@ public class InventoryUI : MonoBehaviour
                 string capturedID = entry.itemID;
                 btn.onClick.AddListener(() => PlayerInventory.Instance.ToggleEquipItem(capturedID));
             }
+        }
+    }
+
+    private void UpdateDuplicateButtonUI()
+    {
+        if (PlayerInventory.Instance == null) return;
+
+        PlayerInventory.Instance.PreviewDuplicateConversion(out int dupCount, out int rewardAmount);
+        CurrencyType currencyType = PlayerInventory.Instance.DuplicateCurrencyType;
+
+        if (convertDuplicatesButton != null)
+            convertDuplicatesButton.interactable = dupCount > 0;
+
+        if (convertDuplicatesButtonText != null)
+        {
+            convertDuplicatesButtonText.text = dupCount > 0
+                ? $"Convert Duplicates ({dupCount}) -> +{rewardAmount} {currencyType}"
+                : "No Duplicates";
         }
     }
 

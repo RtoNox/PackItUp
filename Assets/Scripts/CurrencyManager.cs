@@ -24,6 +24,13 @@ public class CurrencyManager : MonoBehaviour
     {
         if (Instance != null && Instance != this)
         {
+            // If another scene has a CurrencyManager holding a new UI text reference,
+            // pass it to the active singleton before destroying the duplicate.
+            if (amountText != null)
+            {
+                Instance.SetAmountText(amountText);
+            }
+
             Destroy(gameObject);
             return;
         }
@@ -45,8 +52,17 @@ public class CurrencyManager : MonoBehaviour
         return 0;
     }
 
+    public void SetAmountText(TMP_Text newAmountText)
+    {
+        amountText = newAmountText;
+        UpdateCurrencyDisplay();
+    }
+
     public void UpdateCurrencyDisplay()
     {
+        if (amountText == null)
+            return;
+
         int amount = GetBalance(currency);
         amountText.text = amount.ToString();
     }
@@ -129,6 +145,7 @@ public class CurrencyManager : MonoBehaviour
         }
 
         PlayerPrefs.Save();
+        UpdateCurrencyDisplay();
     }
 
     public void AddTierOneCurrency()
