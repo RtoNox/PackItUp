@@ -57,6 +57,11 @@ public class AbilityMarionette : NetworkBehaviour, IAbilityCooldown
 
         if (Input.GetKeyDown(assignedKey))
         {
+            if (AbilityJammer.IsPlayerJammed(this, "Marionette"))
+            {
+                return;
+            }
+
             if (isOnCooldown)
             {
                 Debug.Log("[Marionette] Skill masih cooldown!");
@@ -77,12 +82,22 @@ public class AbilityMarionette : NetworkBehaviour, IAbilityCooldown
 
     public void OnTargetSelected(ulong targetNetworkObjectId)
     {
+        if (AbilityJammer.IsPlayerJammed(this, "Marionette"))
+        {
+            return;
+        }
+
         TryUseMarionetteServerRpc(targetNetworkObjectId);
     }
 
     [ServerRpc]
     private void TryUseMarionetteServerRpc(ulong targetNetworkObjectId)
     {
+        if (AbilityJammer.IsPlayerJammed(this, "Marionette"))
+        {
+            return;
+        }
+
         if (Time.time < lastUseTime + cooldownTime) return;
 
         NetworkObject targetNetObj = null;

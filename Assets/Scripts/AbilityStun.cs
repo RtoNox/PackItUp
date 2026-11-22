@@ -59,6 +59,11 @@ public class AbilityStun : NetworkBehaviour, IAbilityCooldown
 
         if (Input.GetKeyDown(assignedKey))
         {
+            if (AbilityJammer.IsPlayerJammed(this, "Stun"))
+            {
+                return;
+            }
+
             if (isOnCooldown)
             {
                 Debug.Log("[Stun] Skill masih cooldown!");
@@ -72,6 +77,11 @@ public class AbilityStun : NetworkBehaviour, IAbilityCooldown
     [ServerRpc]
     private void TryUseStunServerRpc()
     {
+        if (AbilityJammer.IsPlayerJammed(this, "Stun"))
+        {
+            return;
+        }
+
         if (Time.time < lastUseTime + cooldownTime)
         {
             return;

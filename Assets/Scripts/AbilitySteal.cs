@@ -72,6 +72,11 @@ public class AbilitySteal : NetworkBehaviour, IAbilityCooldown
 
         if (Input.GetKeyDown(assignedKey))
         {
+            if (AbilityJammer.IsPlayerJammed(this, "Steal"))
+            {
+                return;
+            }
+
             if (isOnCooldown)
             {
                 Debug.Log("Ability Steal masih cooldown!");
@@ -85,6 +90,11 @@ public class AbilitySteal : NetworkBehaviour, IAbilityCooldown
     [ServerRpc]
     private void TryUseStealServerRpc()
     {
+        if (AbilityJammer.IsPlayerJammed(this, "Steal"))
+        {
+            return;
+        }
+
         if (Time.time < lastUseTime + cooldownTime)
         {
             return;

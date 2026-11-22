@@ -11,12 +11,16 @@ public class AbilityJammer : NetworkBehaviour, IAbilityCooldown
     public float cooldownTime = 40f;
     public float maxDuration = 10f;
 
+    [Header("Jammer Target Settings")]
+    public bool jamAllEnemies = true;
+    public float jamRadius = 15f;
+
     private float lastUseTime = -999f;
     private float clientCooldownEndTime = -1f;
     private bool wasOnCooldown = false;
 
     [Header("Visual Indicator & VFX")]
-    public GameObject indicatorXObject; // Assign objek tanda X (bisa World Space UI / Sprite / GameObject 3D)
+    public GameObject indicatorXObject;
     public GameObject jammerVfxPrefab;
     private GameObject spawnedVfx;
 
@@ -25,10 +29,28 @@ public class AbilityJammer : NetworkBehaviour, IAbilityCooldown
 
     private Coroutine activeJammerCoroutine;
 
+    // Menyimpan ID player yang sedang terkena Jammer dari instance Jammer mana pun
+    private static readonly HashSet<ulong> activeJammedPlayerIds = new HashSet<ulong>();
+    private readonly List<ulong> currentAffectedIds = new List<ulong>();
+
     public string AbilityName => abilityName;
     public Sprite AbilityIcon => abilityIcon;
     public float CooldownDuration => cooldownTime;
     public KeyCode AssignedKey => assignedKey;
+
+    // Dipanggil dari script ability lain untuk cek apakah player ini sedang di-jam
+    public static bool IsPlayerJammed(Component abilityComponent, string abilityLabel)
+    {
+        if (abilityComponent == null) return false;
+
+        NetworkObject netObj = abilityComponent.GetComponent<NetworkObject>();
+        if (netObj != null && activeJammedPlayerIds.Contains(netObj.NetworkObjectId))
+        {
+            Debug.Log($"[{abilityLabel}] Diblokir! Sedang terkena efek Jammer.");
+            return true;
+        }
+        return false;
+    }
 
     public float GetRemainingCooldown()
     {
@@ -49,25 +71,22 @@ public class AbilityJammer : NetworkBehaviour, IAbilityCooldown
 
     private void Start()
     {
-        // PENTING: Pastikan indikator X mati saat pertama kali game/player spawn
         if (indicatorXObject != null)
-        {
             indicatorXObject.SetActive(false);
-        }
     }
 
     public override void OnNetworkDespawn()
     {
-        CleanupVisuals();
+        CleanupJammer();
         base.OnNetworkDespawn();
     }
 
     private void OnDestroy()
     {
-        CleanupVisuals();
+        CleanupJammer();
     }
 
-    private void CleanupVisuals()
+    private void CleanupJammer()
     {
         if (activeJammerCoroutine != null)
         {
@@ -76,14 +95,18 @@ public class AbilityJammer : NetworkBehaviour, IAbilityCooldown
         }
 
         if (indicatorXObject != null)
-        {
             indicatorXObject.SetActive(false);
-        }
 
         if (spawnedVfx != null)
         {
             Destroy(spawnedVfx);
             spawnedVfx = null;
+        }
+
+        if (IsServer)
+        {
+            SyncJammedPlayersClientRpc(currentAffectedIds.ToArray(), false);
+            currentAffectedIds.Clear();
         }
     }
 
@@ -92,7 +115,6 @@ public class AbilityJammer : NetworkBehaviour, IAbilityCooldown
         if (!IsOwner || !IsSpawned) return;
 
         bool isOnCooldown = GetRemainingCooldown() > 0f;
-
         if (wasOnCooldown && !isOnCooldown)
         {
             Debug.Log("[Jammer] Cooldown selesai! Ability Jammer siap dipakai kembali.");
@@ -101,13 +123,14 @@ public class AbilityJammer : NetworkBehaviour, IAbilityCooldown
 
         if (Input.GetKeyDown(assignedKey))
         {
+            if (AbilityJammer.IsPlayerJammed(this, "Jammer")) return;
+
             if (isOnCooldown)
             {
                 Debug.Log($"[Jammer] Skill masih cooldown! Sisa: {GetRemainingCooldown():0.0}s");
                 return;
             }
 
-            Debug.Log($"[Jammer] Tombol {assignedKey} ditekan, mengirim request ke Server...");
             TryUseJammerServerRpc();
         }
     }
@@ -116,39 +139,65 @@ public class AbilityJammer : NetworkBehaviour, IAbilityCooldown
     private void TryUseJammerServerRpc()
     {
         if (!IsSpawned) return;
-
-        if (Time.time < lastUseTime + cooldownTime)
-        {
-            Debug.LogWarning("[Jammer] Server menolak: masih dalam cooldown.");
-            return;
-        }
+        if (Time.time < lastUseTime + cooldownTime) return;
 
         lastUseTime = Time.time;
         TriggerCooldownClientRpc(cooldownTime);
 
         if (activeJammerCoroutine != null)
-        {
             StopCoroutine(activeJammerCoroutine);
-        }
+
         activeJammerCoroutine = StartCoroutine(JammerRoutine());
     }
 
     private IEnumerator JammerRoutine()
     {
-        Debug.Log($"[Jammer] Skill Jammer diaktifkan selama {maxDuration} detik!");
-
+        Debug.Log($"[Jammer] Aktif selama {maxDuration} detik!");
         ToggleJammerEffectClientRpc(true);
 
-        float timer = 0f;
-        while (timer < maxDuration)
+        List<ulong> targets = new List<ulong>();
+        if (NetworkManager.Singleton != null && NetworkManager.Singleton.SpawnManager != null)
         {
-            timer += Time.deltaTime;
-            yield return null;
+            foreach (var kvp in NetworkManager.Singleton.SpawnManager.SpawnedObjects)
+            {
+                NetworkObject netObj = kvp.Value;
+                if (netObj == null || netObj == NetworkObject) continue;
+                if (!netObj.CompareTag("Player")) continue;
+
+                if (!jamAllEnemies)
+                {
+                    float dist = Vector3.Distance(transform.position, netObj.transform.position);
+                    if (dist > jamRadius) continue;
+                }
+
+                targets.Add(netObj.NetworkObjectId);
+            }
         }
 
+        currentAffectedIds.Clear();
+        currentAffectedIds.AddRange(targets);
+        SyncJammedPlayersClientRpc(currentAffectedIds.ToArray(), true);
+
+        yield return new WaitForSeconds(maxDuration);
+
+        SyncJammedPlayersClientRpc(currentAffectedIds.ToArray(), false);
+        currentAffectedIds.Clear();
         ToggleJammerEffectClientRpc(false);
         activeJammerCoroutine = null;
         Debug.Log("[Jammer] Sesi Jammer berakhir.");
+    }
+
+    [ClientRpc]
+    private void SyncJammedPlayersClientRpc(ulong[] targetIds, bool jammed)
+    {
+        if (targetIds == null) return;
+        foreach (ulong id in targetIds)
+        {
+            if (jammed)
+                activeJammedPlayerIds.Add(id);
+            else
+                activeJammedPlayerIds.Remove(id);
+        }
     }
 
     [ClientRpc]
@@ -165,13 +214,7 @@ public class AbilityJammer : NetworkBehaviour, IAbilityCooldown
     private void ToggleJammerEffectClientRpc(bool isActive)
     {
         if (indicatorXObject != null)
-        {
             indicatorXObject.SetActive(isActive);
-        }
-        else if (isActive)
-        {
-            Debug.LogWarning("[Jammer] indicatorXObject belum di-assign di Inspector!");
-        }
 
         if (isActive)
         {
@@ -179,10 +222,6 @@ public class AbilityJammer : NetworkBehaviour, IAbilityCooldown
             {
                 Vector3 spawnPos = transform.position + Vector3.up * 2.0f;
                 spawnedVfx = Instantiate(jammerVfxPrefab, spawnPos, Quaternion.identity, transform);
-            }
-            else if (jammerVfxPrefab == null)
-            {
-                Debug.LogWarning("[Jammer] jammerVfxPrefab belum di-assign di Inspector!");
             }
         }
         else

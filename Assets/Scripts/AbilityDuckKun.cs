@@ -86,6 +86,11 @@ public class AbilityDuckKun : NetworkBehaviour, IAbilityCooldown
 
         if (Input.GetKeyDown(assignedKey))
         {
+            if (AbilityJammer.IsPlayerJammed(this, "Duck-Kun"))
+            {
+                return;
+            }
+
             if (isOnCooldown)
             {
                 Debug.Log("[Duck-Kun] Skill masih cooldown!");
@@ -106,12 +111,22 @@ public class AbilityDuckKun : NetworkBehaviour, IAbilityCooldown
 
     public void OnTargetSelected(ulong targetNetworkObjectId)
     {
+        if (AbilityJammer.IsPlayerJammed(this, "Duck-Kun"))
+        {
+            return;
+        }
+
         RequestDuckKunServerRpc(targetNetworkObjectId);
     }
 
     [ServerRpc]
     private void RequestDuckKunServerRpc(ulong targetNetworkObjectId)
     {
+        if (AbilityJammer.IsPlayerJammed(this, "Duck-Kun"))
+        {
+            return;
+        }
+
         if (Time.time < lastUseTime + cooldownTime) return;
 
         lastUseTime = Time.time;

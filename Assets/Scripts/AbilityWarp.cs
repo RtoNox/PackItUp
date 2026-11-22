@@ -111,6 +111,11 @@ public class AbilityWarp : NetworkBehaviour, IAbilityCooldown
 
         if (Input.GetKeyDown(assignedKey))
         {
+            if (AbilityJammer.IsPlayerJammed(this, "Warp"))
+            {
+                return;
+            }
+
             if (isOnCooldown)
             {
                 Debug.Log("[Warp] Skill masih cooldown!");
@@ -193,6 +198,11 @@ public class AbilityWarp : NetworkBehaviour, IAbilityCooldown
     [ServerRpc]
     private void TryWarpServerRpc(Vector3 targetPosition)
     {
+        if (AbilityJammer.IsPlayerJammed(this, "Warp"))
+        {
+            return;
+        }
+
         float maxBoundary = 45f;
         targetPosition.x = Mathf.Clamp(targetPosition.x, -maxBoundary, maxBoundary);
         targetPosition.z = Mathf.Clamp(targetPosition.z, -maxBoundary, maxBoundary);
