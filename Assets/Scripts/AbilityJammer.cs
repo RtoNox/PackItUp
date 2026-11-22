@@ -8,12 +8,17 @@ public class AbilityJammer : NetworkBehaviour, IAbilityCooldown
     [Header("Ability Info & Cooldown")]
     public string abilityName = "Jammer";
     public Sprite abilityIcon;
-    public float cooldownTime = 40f;
-    public float maxDuration = 10f;
+    public float cooldownTime = 60f;
+    public float baseDuration = 10f;
+    public float durationPerLevel = 2f;
 
     [Header("Jammer Target Settings")]
-    public bool jamAllEnemies = true;
-    public float jamRadius = 15f;
+    public bool jamAllEnemies = false;
+    public float jamRadius = 6f;
+
+    [Header("Upgrade Settings (Max Lv 3)")]
+    [Range(1, 3)] public int abilityLevel = 1;
+    public int maxAbilityLevel = 3;
 
     private float lastUseTime = -999f;
     private float clientCooldownEndTime = -1f;
@@ -37,6 +42,24 @@ public class AbilityJammer : NetworkBehaviour, IAbilityCooldown
     public Sprite AbilityIcon => abilityIcon;
     public float CooldownDuration => cooldownTime;
     public KeyCode AssignedKey => assignedKey;
+
+    public float GetJammerDuration()
+    {
+        int clampedLevel = Mathf.Clamp(abilityLevel, 1, maxAbilityLevel);
+        return baseDuration + (clampedLevel - 1) * durationPerLevel;
+    }
+
+    public void SetUpgradeLevel(int newLevel)
+    {
+        abilityLevel = Mathf.Clamp(newLevel, 1, maxAbilityLevel);
+    }
+
+    public override void OnNetworkSpawn()
+    {
+        base.OnNetworkSpawn();
+        int savedLevel = AbilityDataHolder.GetLevel(abilityName);
+        SetUpgradeLevel(savedLevel);
+    }
 
     // Dipanggil dari script ability lain untuk cek apakah player ini sedang di-jam
     public static bool IsPlayerJammed(Component abilityComponent, string abilityLabel)
@@ -152,7 +175,8 @@ public class AbilityJammer : NetworkBehaviour, IAbilityCooldown
 
     private IEnumerator JammerRoutine()
     {
-        Debug.Log($"[Jammer] Aktif selama {maxDuration} detik!");
+        float activeDuration = GetJammerDuration();
+        Debug.Log($"[Jammer Lv.{abilityLevel}] Aktif selama {activeDuration:0.#} detik (Radius: {jamRadius} unit)!");
         ToggleJammerEffectClientRpc(true);
 
         List<ulong> targets = new List<ulong>();
@@ -178,7 +202,7 @@ public class AbilityJammer : NetworkBehaviour, IAbilityCooldown
         currentAffectedIds.AddRange(targets);
         SyncJammedPlayersClientRpc(currentAffectedIds.ToArray(), true);
 
-        yield return new WaitForSeconds(maxDuration);
+        yield return new WaitForSeconds(activeDuration);
 
         SyncJammedPlayersClientRpc(currentAffectedIds.ToArray(), false);
         currentAffectedIds.Clear();

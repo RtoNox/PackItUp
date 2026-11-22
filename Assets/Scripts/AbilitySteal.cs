@@ -18,8 +18,12 @@ public class AbilitySteal : NetworkBehaviour, IAbilityCooldown
     [Header("Input Settings")]
     public KeyCode assignedKey = KeyCode.Q;
 
-    [Header("Upgrade Settings")]
+    [Header("Upgrade Settings (Max Lv 3)")]
     [Range(1, 3)] public int abilityLevel = 1;
+    public int maxAbilityLevel = 3;
+
+    [Tooltip("Batas atas persentase curian (default 0.40 = 40%)")]
+    public float maxStealCap = 0.40f;
 
     [Header("Visual Effects")]
     [Tooltip("Masukkan Prefab Partikel efek Steal yang muncul di pemain korban")]
@@ -30,15 +34,38 @@ public class AbilitySteal : NetworkBehaviour, IAbilityCooldown
     public float CooldownDuration => cooldownTime;
     public KeyCode AssignedKey => assignedKey;
 
-    public float GetStealPercentage()
+    public void SetUpgradeLevel(int newLevel)
+    {
+        abilityLevel = Mathf.Clamp(newLevel, 1, maxAbilityLevel);
+    }
+
+    public bool UpgradeLevel()
+    {
+        if (abilityLevel >= maxAbilityLevel) return false;
+        abilityLevel++;
+        return true;
+    }
+
+    // Batas bawah naik tiap level: Lv1 = 10%, Lv2 = 20%, Lv3 = 30%
+    public float GetMinStealPercentage()
     {
         switch (abilityLevel)
         {
             case 1: return 0.10f;
-            case 2: return 0.25f;
-            case 3: return 0.40f;
+            case 2: return 0.20f;
+            case 3: return 0.30f;
             default: return 0.10f;
         }
+    }
+
+    public float GetMaxStealPercentage()
+    {
+        return Mathf.Max(GetMinStealPercentage(), maxStealCap);
+    }
+
+    public float GetRandomStealPercentage()
+    {
+        return Random.Range(GetMinStealPercentage(), GetMaxStealPercentage());
     }
 
     public float GetRemainingCooldown()
@@ -115,12 +142,14 @@ public class AbilitySteal : NetworkBehaviour, IAbilityCooldown
                     int targetScore = targetPoints.Points.Value;
                     if (targetScore > 0)
                     {
-                        int stolenScore = Mathf.RoundToInt(targetScore * GetStealPercentage());
+                        float stealPercent = GetRandomStealPercentage();
+                        int stolenScore = Mathf.RoundToInt(targetScore * stealPercent);
+                        stolenScore = Mathf.Clamp(stolenScore, 1, targetScore);
 
                         targetPoints.Points.Value -= stolenScore;
                         myPoints.Points.Value += stolenScore;
 
-                        Debug.Log($"[Steal] Berhasil mencuri {stolenScore} poin dari {hit.gameObject.name}!");
+                        Debug.Log($"[Steal Lv.{abilityLevel}] Mencuri {stolenScore} poin ({stealPercent * 100f:0.#}%) dari {hit.gameObject.name}!");
                         success = true;
 
                         NetworkObject targetNetObj = hit.GetComponent<NetworkObject>();

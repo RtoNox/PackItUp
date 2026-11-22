@@ -11,9 +11,17 @@ public class AbilityMarionette : NetworkBehaviour, IAbilityCooldown
     public float cooldownTime = 60f;
     public float maxDuration = 30f;
 
+    [Header("Upgrade Settings (Max Lv 3)")]
+    [Range(1, 3)] public int abilityLevel = 1;
+    public int maxAbilityLevel = 3;
+    [Tooltip("Penambahan multiplier skor per level (0.05 = +5%)")]
+    public float scoreBonusPerLevel = 0.05f;
+
     private float lastUseTime = -999f;
     private float clientCooldownEndTime = -1f;
     private bool wasOnCooldown = false;
+    private Coroutine activeMarionetteRoutine;
+    private PlayerPoints activeTargetPoints;
 
     [Header("Line of Sight Settings")]
     public LayerMask obstacleLayer;
@@ -25,6 +33,53 @@ public class AbilityMarionette : NetworkBehaviour, IAbilityCooldown
     public Sprite AbilityIcon => abilityIcon;
     public float CooldownDuration => cooldownTime;
     public KeyCode AssignedKey => assignedKey;
+
+    /// <summary>
+    /// Mengembalikan multiplier skor berdasarkan level Marionette (Lv 1 = 1.00x, Lv 2 = 1.05x, Lv 3 = 1.10x).
+    /// </summary>
+    public float GetScoreMultiplier()
+    {
+        int clampedLevel = Mathf.Clamp(abilityLevel, 1, maxAbilityLevel);
+        return 1f + (clampedLevel - 1) * scoreBonusPerLevel;
+    }
+
+    public void SetUpgradeLevel(int newLevel)
+    {
+        abilityLevel = Mathf.Clamp(newLevel, 1, maxAbilityLevel);
+    }
+
+    public override void OnNetworkSpawn()
+    {
+        base.OnNetworkSpawn();
+        int savedLevel = AbilityDataHolder.GetLevel(abilityName);
+        SetUpgradeLevel(savedLevel);
+    }
+
+    public override void OnNetworkDespawn()
+    {
+        CleanupMarionette();
+        base.OnNetworkDespawn();
+    }
+
+    private void OnDestroy()
+    {
+        CleanupMarionette();
+    }
+
+    private void CleanupMarionette()
+    {
+        if (activeMarionetteRoutine != null)
+        {
+            StopCoroutine(activeMarionetteRoutine);
+            activeMarionetteRoutine = null;
+        }
+
+        if (IsServer && activeTargetPoints != null)
+        {
+            activeTargetPoints.marionetteCasterRef.Value = default;
+            activeTargetPoints = null;
+        }
+    }
 
     public float GetRemainingCooldown()
     {
@@ -116,7 +171,12 @@ public class AbilityMarionette : NetworkBehaviour, IAbilityCooldown
             lastUseTime = Time.time;
             TriggerCooldownClientRpc(cooldownTime);
 
-            StartCoroutine(MarionetteRoutine(gameObject, targetNetObj.gameObject));
+            if (activeMarionetteRoutine != null)
+            {
+                StopCoroutine(activeMarionetteRoutine);
+            }
+
+            activeMarionetteRoutine = StartCoroutine(MarionetteRoutine(gameObject, targetNetObj.gameObject));
         }
         else
         {
@@ -126,14 +186,15 @@ public class AbilityMarionette : NetworkBehaviour, IAbilityCooldown
 
     private IEnumerator MarionetteRoutine(GameObject caster, GameObject target)
     {
-        Debug.Log($"[Marionette] Berhasil mengaitkan Marionette ke target: {target.name} (Durasi: {maxDuration}s).");
+        float multiplier = GetScoreMultiplier();
+        Debug.Log($"[Marionette Lv.{abilityLevel}] Mengaitkan ke target: {target.name} (Durasi: {maxDuration}s, Multiplier: {multiplier:0.00}x).");
 
         PlayerPoints targetPoints = target.GetComponent<PlayerPoints>();
         NetworkObject casterNetObj = caster.GetComponent<NetworkObject>();
 
-        // Set referensi caster ke PlayerPoints milik target di sisi Server agar poinnya bisa dicuri
         if (targetPoints != null && casterNetObj != null && IsServer)
         {
+            activeTargetPoints = targetPoints;
             targetPoints.marionetteCasterRef.Value = new NetworkObjectReference(casterNetObj);
         }
 
@@ -151,12 +212,17 @@ public class AbilityMarionette : NetworkBehaviour, IAbilityCooldown
             yield return null;
         }
 
-        // Lepaskan kembali ikatan Marionette setelah durasi habis atau dibatalkan
         if (targetPoints != null && IsServer)
         {
             targetPoints.marionetteCasterRef.Value = default;
         }
 
+        if (activeTargetPoints == targetPoints)
+        {
+            activeTargetPoints = null;
+        }
+
+        activeMarionetteRoutine = null;
         Debug.Log("[Marionette] Sesi Marionette berakhir.");
     }
 

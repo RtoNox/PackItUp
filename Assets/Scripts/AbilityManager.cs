@@ -7,9 +7,11 @@ using TMPro;
 
 public class AbilityManager : MonoBehaviour
 {
+    public const int MaxUpgradeLevel = 3;
+
     [Header("UI Text Status Slots (Opsional)")]
-    public TMP_Text slot1Text; 
-    public TMP_Text slot2Text; 
+    public TMP_Text slot1Text;
+    public TMP_Text slot2Text;
 
     [Header("Teks Tombol Ability (Equip / UnEquip)")]
     public TMP_Text btnTextSteal;
@@ -17,8 +19,8 @@ public class AbilityManager : MonoBehaviour
     public TMP_Text btnTextJammer;
     public TMP_Text btnTextWarp;
     public TMP_Text btnTextBehindYou;
-    public TMP_Text btnTextDuckKun; 
-    public TMP_Text btnTextMarionette; // <--- TAMBAHAN UNTUK MARIONETTE
+    public TMP_Text btnTextDuckKun;
+    public TMP_Text btnTextMarionette;
 
     [Header("UI Text Level Indicator")]
     public TMP_Text stealLevelText;
@@ -26,8 +28,8 @@ public class AbilityManager : MonoBehaviour
     public TMP_Text jammerLevelText;
     public TMP_Text warpLevelText;
     public TMP_Text behindYouLevelText;
-    public TMP_Text duckKunLevelText; 
-    public TMP_Text marionetteLevelText; // <--- TAMBAHAN UNTUK MARIONETTE
+    public TMP_Text duckKunLevelText;
+    public TMP_Text marionetteLevelText;
 
     void Start()
     {
@@ -37,7 +39,7 @@ public class AbilityManager : MonoBehaviour
     public void OnBackFromAbilityPanel()
     {
         string targetScene = AbilityDataHolder.PreviousScene;
-        
+
         if (string.IsNullOrEmpty(targetScene))
         {
             targetScene = "MainMenu"; // Fallback aman
@@ -101,10 +103,14 @@ public class AbilityManager : MonoBehaviour
     {
         // 1. Status Slot Q & E
         if (slot1Text != null)
-            slot1Text.text = string.IsNullOrEmpty(AbilityDataHolder.SelectedAbility1) ? "Slot 1 (Q): Empty" : $"Slot 1 (Q): {AbilityDataHolder.SelectedAbility1}";
+            slot1Text.text = string.IsNullOrEmpty(AbilityDataHolder.SelectedAbility1)
+                ? "Slot 1 (Q): Empty"
+                : $"Slot 1 (Q): {AbilityDataHolder.SelectedAbility1}";
 
         if (slot2Text != null)
-            slot2Text.text = string.IsNullOrEmpty(AbilityDataHolder.SelectedAbility2) ? "Slot 2 (E): Empty" : $"Slot 2 (E): {AbilityDataHolder.SelectedAbility2}";
+            slot2Text.text = string.IsNullOrEmpty(AbilityDataHolder.SelectedAbility2)
+                ? "Slot 2 (E): Empty"
+                : $"Slot 2 (E): {AbilityDataHolder.SelectedAbility2}";
 
         // 2. Teks Tombol Equip / UnEquip Dinamis
         UpdateSingleButtonText("Steal", btnTextSteal);
@@ -112,17 +118,32 @@ public class AbilityManager : MonoBehaviour
         UpdateSingleButtonText("Jammer", btnTextJammer);
         UpdateSingleButtonText("Warp", btnTextWarp);
         UpdateSingleButtonText("Behind You", btnTextBehindYou);
-        UpdateSingleButtonText("Duck-Kun", btnTextDuckKun); 
-        UpdateSingleButtonText("Marionette", btnTextMarionette); // <--- TAMBAHAN UNTUK MARIONETTE
+        UpdateSingleButtonText("Duck-Kun", btnTextDuckKun);
+        UpdateSingleButtonText("Marionette", btnTextMarionette);
 
-        // 3. Teks Level Indicator
-        if (stealLevelText != null) stealLevelText.text = $"Lv {AbilityDataHolder.LevelSteal}";
-        if (stunLevelText != null) stunLevelText.text = $"Lv {AbilityDataHolder.LevelStun}";
-        if (jammerLevelText != null) jammerLevelText.text = $"Lv {AbilityDataHolder.LevelJammer}";
-        if (warpLevelText != null) warpLevelText.text = $"Lv {AbilityDataHolder.LevelWarp}";
-        if (behindYouLevelText != null) behindYouLevelText.text = $"Lv {AbilityDataHolder.LevelBehindYou}";
-        if (duckKunLevelText != null) duckKunLevelText.text = $"Lv {AbilityDataHolder.GetLevel("Duck-Kun")}"; 
-        if (marionetteLevelText != null) marionetteLevelText.text = $"Lv {AbilityDataHolder.GetLevel("Marionette")}"; // <--- TAMBAHAN UNTUK MARIONETTE
+        // 3. Teks Level Indicator (1 -> 2 -> MAX)
+        UpdateLevelIndicator(stealLevelText, AbilityDataHolder.GetLevel("Steal"));
+        UpdateLevelIndicator(stunLevelText, AbilityDataHolder.GetLevel("Stun"));
+        UpdateLevelIndicator(jammerLevelText, AbilityDataHolder.GetLevel("Jammer"));
+        UpdateLevelIndicator(warpLevelText, AbilityDataHolder.GetLevel("Warp"));
+        UpdateLevelIndicator(behindYouLevelText, AbilityDataHolder.GetLevel("Behind You"));
+        UpdateLevelIndicator(duckKunLevelText, AbilityDataHolder.GetLevel("Duck-Kun"));
+        UpdateLevelIndicator(marionetteLevelText, AbilityDataHolder.GetLevel("Marionette"));
+    }
+
+    private void UpdateLevelIndicator(TMP_Text levelText, int rawLevel)
+    {
+        if (levelText == null) return;
+
+        if (rawLevel >= MaxUpgradeLevel)
+        {
+            levelText.text = "MAX";
+        }
+        else
+        {
+            int displayLevel = Mathf.Clamp(rawLevel, 1, MaxUpgradeLevel - 1);
+            levelText.text = displayLevel.ToString();
+        }
     }
 
     private void UpdateSingleButtonText(string abilityName, TMP_Text buttonText)
@@ -137,16 +158,34 @@ public class AbilityManager : MonoBehaviour
 
     public void UpgradeAbility(string abilityName)
     {
+        int currentLevel = AbilityDataHolder.GetLevel(abilityName);
+        if (currentLevel >= MaxUpgradeLevel)
+        {
+            UpdateAllUI();
+            Debug.Log($"[Upgrade] Ability {abilityName} sudah mencapai level maksimal (MAX / Lv {MaxUpgradeLevel})!");
+            return;
+        }
+
         AbilityDataHolder.Upgrade(abilityName);
         UpdateAllUI();
         Debug.Log($"[Upgrade] Ability {abilityName} sekarang Level {AbilityDataHolder.GetLevel(abilityName)}!");
     }
 
+    // Tombol Klik Equip / UnEquip
     public void ClickSteal() { OnAbilityButtonClicked("Steal"); }
     public void ClickStun() { OnAbilityButtonClicked("Stun"); }
     public void ClickJammer() { OnAbilityButtonClicked("Jammer"); }
     public void ClickWarp() { OnAbilityButtonClicked("Warp"); }
-    public void ClickBehindYou() { OnAbilityButtonClicked("OnBackFromAbilityPanel" == "X" ? "X" : "Behind You"); }
-    public void ClickDuckKun() { OnAbilityButtonClicked("Duck-Kun"); } 
-    public void ClickMarionette() { OnAbilityButtonClicked("Marionette"); } // <--- TAMBAHAN FUNGSI KLIK MARIONETTE
+    public void ClickBehindYou() { OnAbilityButtonClicked("Behind You"); }
+    public void ClickDuckKun() { OnAbilityButtonClicked("Duck-Kun"); }
+    public void ClickMarionette() { OnAbilityButtonClicked("Marionette"); }
+
+    // Shortcut Klik Upgrade (Opsional untuk Inspector)
+    public void UpgradeSteal() { UpgradeAbility("Steal"); }
+    public void UpgradeStun() { UpgradeAbility("Stun"); }
+    public void UpgradeJammer() { UpgradeAbility("Jammer"); }
+    public void UpgradeWarp() { UpgradeAbility("Warp"); }
+    public void UpgradeBehindYou() { UpgradeAbility("Behind You"); }
+    public void UpgradeDuckKun() { UpgradeAbility("Duck-Kun"); }
+    public void UpgradeMarionette() { UpgradeAbility("Marionette"); }
 }
