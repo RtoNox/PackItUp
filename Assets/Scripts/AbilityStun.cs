@@ -8,60 +8,100 @@ public class AbilityStun : NetworkBehaviour, IAbilityCooldown
     [Header("Ability Info & Cooldown")]
     public string abilityName = "Stun";
     public Sprite abilityIcon;
-    public float range = 5f;
-    public float stunDuration = 3f;
-    public float cooldownTime = 25f;
-
-    private float lastUseTime = -999f;
-    private float clientCooldownEndTime = -1f;
-    private bool wasOnCooldown = false;
+    public float range = 2f;
+    public float stunDuration = 5f;
+    public float cooldownTime = 30f;
 
     [Header("Input Settings")]
     public KeyCode assignedKey = KeyCode.E;
 
+    [Header("Upgrade Settings (Max Lv 3)")]
+    [Range(1, 3)] public int abilityLevel = 1;
+    public int maxAbilityLevel = 3;
+
     [Header("VFX Settings")]
     public GameObject headVfxPrefab;     // Tarik prefab partikel kepala ke sini
     public GameObject bodyLightningPrefab; // Tarik prefab 'Lighting_Stun' ke sini
+
+    private int currentStacks = 1;
+    private readonly List<float> activeCooldownEndTimes = new List<float>();
 
     public string AbilityName => abilityName;
     public Sprite AbilityIcon => abilityIcon;
     public float CooldownDuration => cooldownTime;
     public KeyCode AssignedKey => assignedKey;
 
+    public int GetMaxStacks()
+    {
+        return Mathf.Clamp(abilityLevel, 1, maxAbilityLevel);
+    }
+
+    public int GetCurrentStacks()
+    {
+        return currentStacks;
+    }
+
+    public void SetUpgradeLevel(int newLevel, bool refillStacks = true)
+    {
+        abilityLevel = Mathf.Clamp(newLevel, 1, maxAbilityLevel);
+        int maxStacks = GetMaxStacks();
+
+        if (refillStacks)
+        {
+            currentStacks = maxStacks;
+        }
+        else
+        {
+            currentStacks = Mathf.Clamp(currentStacks, 0, maxStacks);
+        }
+    }
+
+    public override void OnNetworkSpawn()
+    {
+        base.OnNetworkSpawn();
+        int savedLevel = AbilityDataHolder.GetLevel(abilityName);
+        SetUpgradeLevel(savedLevel, true);
+
+        if (IsOwner)
+        {
+            SyncStackAndCooldownClientRpc(currentStacks, 0f);
+        }
+    }
+
     public float GetRemainingCooldown()
     {
-        if (IsServer)
+        activeCooldownEndTimes.RemoveAll(endTime => Time.time >= endTime);
+        if (activeCooldownEndTimes.Count == 0) return 0f;
+
+        float earliestEnd = float.MaxValue;
+        for (int i = 0; i < activeCooldownEndTimes.Count; i++)
         {
-            float remainingServer = (lastUseTime + cooldownTime) - Time.time;
-            return remainingServer > 0f ? remainingServer : 0f;
+            if (activeCooldownEndTimes[i] < earliestEnd)
+            {
+                earliestEnd = activeCooldownEndTimes[i];
+            }
         }
 
-        if (clientCooldownEndTime > 0f)
-        {
-            float remainingClient = clientCooldownEndTime - Time.time;
-            return remainingClient > 0f ? remainingClient : 0f;
-        }
-
-        return 0f;
+        float remaining = earliestEnd - Time.time;
+        return remaining > 0f ? remaining : 0f;
     }
 
     void Update()
     {
         if (!IsOwner) return;
 
-        bool isOnCooldown = GetRemainingCooldown() > 0f;
-
-        if (wasOnCooldown && !isOnCooldown)
-        {
-            Debug.Log("[Stun] Cooldown selesai! Ability Stun siap dipakai kembali.");
-        }
-        wasOnCooldown = isOnCooldown;
+        activeCooldownEndTimes.RemoveAll(endTime => Time.time >= endTime);
 
         if (Input.GetKeyDown(assignedKey))
         {
-            if (isOnCooldown)
+            if (AbilityJammer.IsPlayerJammed(this, "Stun"))
             {
-                Debug.Log("[Stun] Skill masih cooldown!");
+                return;
+            }
+
+            if (currentStacks <= 0)
+            {
+                Debug.Log($"[Stun] Stack habis (0/{GetMaxStacks()}). Sisa cooldown tercepat: {GetRemainingCooldown():0.0}s");
                 return;
             }
 
@@ -72,12 +112,16 @@ public class AbilityStun : NetworkBehaviour, IAbilityCooldown
     [ServerRpc]
     private void TryUseStunServerRpc()
     {
-        if (Time.time < lastUseTime + cooldownTime)
+        if (AbilityJammer.IsPlayerJammed(this, "Stun"))
         {
             return;
         }
 
-        bool success = false;
+        if (currentStacks <= 0)
+        {
+            return;
+        }
+
         GameObject targetPlayer = null;
         float shortestDistance = Mathf.Infinity;
 
@@ -100,32 +144,36 @@ public class AbilityStun : NetworkBehaviour, IAbilityCooldown
             NetworkObject targetNetObj = targetPlayer.GetComponent<NetworkObject>();
             if (targetNetObj != null)
             {
+                currentStacks = Mathf.Max(0, currentStacks - 1);
+
+                // Jalankan cooldown 30s khusus untuk 1 stack yang baru terpakai
+                StartCoroutine(RechargeOneStackRoutine(cooldownTime));
+
+                // Terapkan stun ke target di semua client
                 ApplyStunClientRpc(targetNetObj.NetworkObjectId, stunDuration);
 
-                Debug.Log($"[Stun] Berhasil men-stun player target ({targetPlayer.name}) selama {stunDuration} detik!");
-                success = true;
+                // Sinkronkan jumlah stack & waktu cooldown stack terpakai ke owner
+                SyncStackAndCooldownClientRpc(currentStacks, cooldownTime);
+
+                Debug.Log($"[Stun Lv.{abilityLevel}] Berhasil men-stun {targetPlayer.name} selama {stunDuration}s! Sisa stack: {currentStacks}/{GetMaxStacks()}");
+                return;
             }
         }
 
-        if (success)
-        {
-            lastUseTime = Time.time;
-            TriggerCooldownClientRpc(cooldownTime);
-        }
-        else
-        {
-            Debug.Log("[Stun] Tidak ada target player di dekatmu! Skill tidak masuk cooldown.");
-        }
+        Debug.Log("[Stun] Tidak ada target player di dekatmu! Stack tidak berkurang.");
     }
 
-    [ClientRpc]
-    private void TriggerCooldownClientRpc(float duration)
+    private IEnumerator RechargeOneStackRoutine(float duration)
     {
-        if (IsOwner)
+        yield return new WaitForSeconds(duration);
+
+        int maxStacks = GetMaxStacks();
+        if (currentStacks < maxStacks)
         {
-            clientCooldownEndTime = Time.time + duration;
-            wasOnCooldown = true;
+            currentStacks++;
         }
+
+        SyncStackAndCooldownClientRpc(currentStacks, 0f);
     }
 
     [ClientRpc]
@@ -137,15 +185,28 @@ public class AbilityStun : NetworkBehaviour, IAbilityCooldown
         }
     }
 
+    [ClientRpc]
+    private void SyncStackAndCooldownClientRpc(int newStacks, float addedCooldownDuration)
+    {
+        if (!IsOwner) return;
+
+        currentStacks = newStacks;
+
+        if (addedCooldownDuration > 0f)
+        {
+            activeCooldownEndTimes.Add(Time.time + addedCooldownDuration);
+        }
+    }
+
     private IEnumerator StunRoutine(GameObject target, float duration)
     {
-        // 1. Matikan movement player
+        // 1. Matikan movement player target
         MonoBehaviour playerMovement = target.GetComponent<PlayerMovement>();
         if (playerMovement != null) playerMovement.enabled = false;
 
         List<GameObject> spawnedVfxList = new List<GameObject>();
 
-        // 2. Munculkan VFX di Kepala (dengan offset Y lebih tinggi)
+        // 2. Munculkan VFX di Kepala
         if (headVfxPrefab != null)
         {
             Vector3 headPosition = target.transform.position + new Vector3(0, 2.0f, 0);
@@ -153,7 +214,7 @@ public class AbilityStun : NetworkBehaviour, IAbilityCooldown
             spawnedVfxList.Add(headVfx);
         }
 
-        // 3. Munculkan VFX Petir di Area Badan (posisi pusat atau offset dada Y + 1.0f)
+        // 3. Munculkan VFX Petir di Area Badan
         if (bodyLightningPrefab != null)
         {
             Vector3 bodyPosition = target.transform.position + new Vector3(0, 1.0f, 0);
@@ -163,7 +224,6 @@ public class AbilityStun : NetworkBehaviour, IAbilityCooldown
 
         Debug.Log($"[Stun] Player {target.name} sedang terkena Stun!");
 
-        // Tunggu selama durasi stun
         yield return new WaitForSeconds(duration);
 
         // 4. Hancurkan semua VFX setelah durasi stun selesai
@@ -175,7 +235,7 @@ public class AbilityStun : NetworkBehaviour, IAbilityCooldown
             }
         }
 
-        // 5. Nyalakan kembali movement player
+        // 5. Nyalakan kembali movement player target
         if (playerMovement != null) playerMovement.enabled = true;
 
         Debug.Log($"[Stun] Efek Stun pada {target.name} telah selesai.");
