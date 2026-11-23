@@ -674,9 +674,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: 'Baju
-
-'
+  m_text: Skin
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -2305,7 +2303,7 @@ PrefabInstance:
     - target: {fileID: 7714378067266297380, guid: 5b330872046be1f469780ef370378a80,
         type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: -249.99991
+      value: -250.00002
       objectReference: {fileID: 0}
     - target: {fileID: 8952630835204065410, guid: 5b330872046be1f469780ef370378a80,
         type: 3}

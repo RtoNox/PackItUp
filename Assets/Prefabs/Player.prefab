@@ -798,7 +798,7 @@ CapsuleCollider:
     serializedVersion: 2
     m_Bits: 0
   m_LayerOverridePriority: 0
-  m_IsTrigger: 0
+  m_IsTrigger: 1
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 2
@@ -1334,6 +1334,11 @@ PrefabInstance:
       propertyPath: m_Controller
       value: 
       objectReference: {fileID: 9100000, guid: 160b0216d0347ea45bbac0b2abf8670e, type: 2}
+    - target: {fileID: 5866666021909216657, guid: 5577e081770b33f49b0ae04cd0f9019c,
+        type: 3}
+      propertyPath: m_ApplyRootMotion
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 7986814019933463497, guid: 5577e081770b33f49b0ae04cd0f9019c,
         type: 3}
       propertyPath: m_Enabled
