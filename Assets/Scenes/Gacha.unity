@@ -4323,7 +4323,7 @@ PrefabInstance:
     - target: {fileID: 7714378067266297380, guid: 5b330872046be1f469780ef370378a80,
         type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: -249.9998
+      value: -250
       objectReference: {fileID: 0}
     - target: {fileID: 8952630835204065410, guid: 5b330872046be1f469780ef370378a80,
         type: 3}
@@ -4422,6 +4422,7 @@ MonoBehaviour:
   - {fileID: 11400000, guid: bb51251affdd392459d1e45841634b99, type: 2}
   - {fileID: 11400000, guid: fc7623639769b88489086ebf966aa03e, type: 2}
   - {fileID: 11400000, guid: 4eef3f20e35271b44ade2b9d1cb0b332, type: 2}
+  - {fileID: 11400000, guid: 98bb9b7952981464da00ae222ca7b8ec, type: 2}
   rDropRate: 70
   srDropRate: 25
   ssrDropRate: 5
