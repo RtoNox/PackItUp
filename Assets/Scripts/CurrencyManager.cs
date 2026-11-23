@@ -177,19 +177,11 @@ public class CurrencyManager : MonoBehaviour
 
     public void SpendOnePullCurrency()
     {
-        int currentBalance = GetBalance(currency);
-        balances[currency] = currentBalance - 100;
-
-        SaveCurrency(currency);
-        UpdateCurrencyDisplay();
+        SpendCurrency(currency, 100);
     }
 
     public void SpendTenPullCurrency()
     {
-        int currentBalance = GetBalance(currency);
-        balances[currency] = currentBalance - 1000;
-
-        SaveCurrency(currency);
-        UpdateCurrencyDisplay();
+        SpendCurrency(currency, 1000);
     }
 }

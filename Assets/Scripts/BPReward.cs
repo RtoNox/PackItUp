@@ -122,4 +122,39 @@ public class BPReward : MonoBehaviour
         Load();
         OnBPChanged?.Invoke();
     }
+
+    public bool CanClaimAny()
+{
+    for (int i = 1; i <= Level; i++)
+        if (CanClaim(i, false) || CanClaim(i, true)) return true;
+    return false;
+}
+
+public int ClaimAll()
+{
+    int total = 0;
+
+    for (int i = 1; i <= Level && i <= MaxLevel; i++)
+    {
+        foreach (bool premium in new[] { false, true })
+        {
+            if (!CanClaim(i, premium)) continue;
+
+            BPTier tier = tiers[i - 1];
+            int amount = premium ? tier.premiumReward : tier.freeReward;
+
+            CurrencyManager.Instance.AddCurrency(CurrencyType.Its, amount);
+            PlayerPrefs.SetInt(ClaimKey(i, premium), 1);
+            total += amount;
+        }
+    }
+
+    if (total > 0)
+    {
+        PlayerPrefs.Save();
+        OnBPChanged?.Invoke();   // once, not per reward
+    }
+
+    return total;   // use it for a "+1250 Its" popup
+}
 }

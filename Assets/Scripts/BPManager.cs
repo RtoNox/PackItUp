@@ -15,6 +15,7 @@ public class BPManager : MonoBehaviour
     public GameObject premiumCover;
 
     public Button upgradeButton;
+    public Button claimAllButton;
 
     public TMP_Text timerText;
 
@@ -89,5 +90,10 @@ public class BPManager : MonoBehaviour
 
         PlayerPrefs.SetInt(PremiumKey, 1);
         PlayerPrefs.Save();
+    }
+
+    public void ClaimAllButton()
+    {
+        BPReward.Instance.ClaimAll();
     }
 }
