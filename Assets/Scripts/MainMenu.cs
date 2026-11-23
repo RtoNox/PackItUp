@@ -51,9 +51,9 @@ public class MainMenu : MonoBehaviour
             if (currentState != MainMenuState.MainMenuScreen)
             {
                 ChangeState(MainMenuState.MainMenuScreen);
-                Cursor.lockState = CursorLockMode.None;
-                Cursor.visible = true;
             }
+            Cursor.lockState = CursorLockMode.None;
+            Cursor.visible = true;
         }
     }
 
