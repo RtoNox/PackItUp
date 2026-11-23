@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Empty
   m_EditorClassIdentifier: Assembly-CSharp::GachaCharacterData
   characterID: empty
-  characterName: empty
+  characterName: Default
   rarity: 0
   icon: {fileID: 0}
   characterPrefab: {fileID: 919132149155446097, guid: 5577e081770b33f49b0ae04cd0f9019c,

@@ -1,5 +1,7 @@
 using UnityEngine;
+using UnityEngine.EventSystems;
 using Unity.Netcode;
+using TMPro;
 
 public class PlayerAnimation : NetworkBehaviour
 {
@@ -53,13 +55,11 @@ public class PlayerAnimation : NetworkBehaviour
         }
     }
 
-    // Called by PlayerCharacterVisual right before destroying the old character model
     public void ClearAnimator()
     {
         animator = null;
     }
 
-    // Called by PlayerCharacterVisual right after spawning the new character model
     public void SetAnimator(Animator newAnimator)
     {
         if (newAnimator == null)
@@ -80,20 +80,49 @@ public class PlayerAnimation : NetworkBehaviour
 
             animator.SetBool(IsRunningHash, currentRunning);
         }
+        else
+        {
+            animator.SetBool(IsRunningHash, false);
+        }
+    }
+
+    // Can also be hooked to a UI Button's OnClick() in MainMenu
+    public void TriggerEmote()
+    {
+        if (animator == null)
+            return;
+
+        if (!IsSpawned)
+        {
+            animator.SetTrigger(EmoteHash);
+        }
+        else if (IsOwner)
+        {
+            TriggerEmoteServerRpc();
+        }
     }
 
     private void Update()
     {
-        // Do not run networked animation logic on the offline MainMenu showcase player
-        if (!IsSpawned)
-            return;
-
         // Re-acquire Animator if the character model spawned after Awake()
         if (animator == null)
         {
             Animator foundAnimator = GetComponentInChildren<Animator>();
             if (foundAnimator != null)
                 SetAnimator(foundAnimator);
+        }
+
+        // Offline MainMenu showcase mode: stay in Idle and only allow Emote
+        if (!IsSpawned)
+        {
+            if (animator != null)
+                animator.SetBool(IsRunningHash, false);
+
+            if (Input.GetKeyDown(KeyCode.Alpha1) && !IsTypingInInputField())
+            {
+                TriggerEmote();
+            }
+            return;
         }
 
         if (IsOwner)
@@ -119,10 +148,17 @@ public class PlayerAnimation : NetworkBehaviour
         }
         else
         {
-            // Remote players apply the synced running state to their current character model
             if (animator != null)
                 animator.SetBool(IsRunningHash, netIsRunning.Value);
         }
+    }
+
+    private bool IsTypingInInputField()
+    {
+        if (EventSystem.current == null || EventSystem.current.currentSelectedGameObject == null)
+            return false;
+
+        return EventSystem.current.currentSelectedGameObject.GetComponent<TMP_InputField>() != null;
     }
 
     [ServerRpc]
