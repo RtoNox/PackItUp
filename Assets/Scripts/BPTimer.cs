@@ -6,7 +6,7 @@ public class BPTimer : MonoBehaviour
 {
     public static BPTimer Instance { get; private set; }
 
-    [SerializeField] private int seasonLengthDays = 1;
+    [SerializeField] private int seasonLengthDays = 30;
 
     private const string SeasonEndKey = "BP_SeasonEnd";
     private DateTime seasonEnd;

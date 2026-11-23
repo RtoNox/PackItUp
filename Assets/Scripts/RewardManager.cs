@@ -37,9 +37,9 @@ public class RewardManager : NetworkBehaviour
         return rank switch
         {
             1 => 100,
-            2 => 60,
-            3 => 30,
-            4 => 10
+            2 => 50,
+            3 => 50,
+            4 => 50
         };
     }
 
