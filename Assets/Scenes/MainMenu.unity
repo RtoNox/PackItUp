@@ -6392,8 +6392,6 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 2d949fad3bc1fd14da3efce663955efd, type: 2}
   - {fileID: 11400000, guid: fc7623639769b88489086ebf966aa03e, type: 2}
   - {fileID: 11400000, guid: 4eef3f20e35271b44ade2b9d1cb0b332, type: 2}
-  - {fileID: 11400000, guid: 98bb9b7952981464da00ae222ca7b8ec, type: 2}
-  - {fileID: 11400000, guid: d18900d454c96c343b870f5ae55c579e, type: 2}
   defaultCharacter: {fileID: 0}
   duplicateCurrencyType: 0
   duplicateRewardR: 20
@@ -6663,7 +6661,7 @@ PrefabInstance:
     - target: {fileID: 7714378067266297380, guid: 5b330872046be1f469780ef370378a80,
         type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: -249.99997
+      value: -250
       objectReference: {fileID: 0}
     - target: {fileID: 7910660933658638438, guid: 5b330872046be1f469780ef370378a80,
         type: 3}
