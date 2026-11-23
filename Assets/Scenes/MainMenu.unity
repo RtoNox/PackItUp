@@ -5763,8 +5763,30 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 7610236496354245720, guid: 2ce46b704b22ebb46a30da9850eb2051,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1836920453}
   m_SourcePrefab: {fileID: 100100000, guid: 2ce46b704b22ebb46a30da9850eb2051, type: 3}
+--- !u!1 &1836920452 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 7610236496354245720, guid: 2ce46b704b22ebb46a30da9850eb2051,
+    type: 3}
+  m_PrefabInstance: {fileID: 1836920451}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1836920453
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1836920452}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a8a2921b1c458494dbf0e800958c5991, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ConnectionStatusLogger
 --- !u!1 &1865195826
 GameObject:
   m_ObjectHideFlags: 0
@@ -6735,7 +6757,7 @@ PrefabInstance:
     - target: {fileID: 7714378067266297380, guid: 5b330872046be1f469780ef370378a80,
         type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: -249.99953
+      value: -249.99995
       objectReference: {fileID: 0}
     - target: {fileID: 7910660933658638438, guid: 5b330872046be1f469780ef370378a80,
         type: 3}

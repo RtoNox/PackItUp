@@ -68,8 +68,20 @@ public class PlayerSpawnManager : NetworkBehaviour
         if (cc != null)
             cc.enabled = true;
 
-        // Send exact spawn position & rotation to the owning Client so ClientNetworkTransform
-        // does not reset to (0, 0, 0) in Map1 or face the wrong way in RoomScene
+        // Tell the owning client to snap to its spawn point after a short delay
+        // so the NetworkObject is guaranteed to exist on the client first
+        StartCoroutine(SendSpawnTransformDelayed(netObj, clientId, spawnPoint.position, spawnPoint.rotation));
+
+        spawnedClients.Add(clientId);
+        Debug.Log($"[PlayerSpawnManager] Spawned client {clientId} at {spawnPoint.name} ({spawnPoint.position})");
+    }
+
+    private System.Collections.IEnumerator SendSpawnTransformDelayed(NetworkObject netObj, ulong clientId, Vector3 pos, Quaternion rot)
+    {
+        yield return null;
+
+        if (netObj == null || !netObj.IsSpawned) yield break;
+
         ClientRpcParams targetClient = new ClientRpcParams
         {
             Send = new ClientRpcSendParams
@@ -77,10 +89,7 @@ public class PlayerSpawnManager : NetworkBehaviour
                 TargetClientIds = new[] { clientId }
             }
         };
-        SetSpawnTransformClientRpc(netObj, spawnPoint.position, spawnPoint.rotation, targetClient);
-
-        spawnedClients.Add(clientId);
-        Debug.Log($"[PlayerSpawnManager] Spawned client {clientId} at {spawnPoint.name} ({spawnPoint.position})");
+        SetSpawnTransformClientRpc(netObj, pos, rot, targetClient);
     }
 
     [ClientRpc]
@@ -96,7 +105,7 @@ public class PlayerSpawnManager : NetworkBehaviour
 
         player.transform.SetPositionAndRotation(position, rotation);
 
-        if (player.TryGetComponent<NetworkTransform>(out var netTransform))
+        if (player.TryGetComponent<NetworkTransform>(out var netTransform) && netTransform.CanCommitToTransform)
             netTransform.Teleport(position, rotation, player.transform.localScale);
 
         if (cc != null)
