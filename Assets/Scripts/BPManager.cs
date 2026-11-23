@@ -56,8 +56,8 @@ public class BPManager : MonoBehaviour
     {
         var bp = BPReward.Instance;
 
-        levelText.text = $"Level {bp.Level}";
-        xpText.text = bp.IsMaxLevel ? "MAX" : $"{bp.XP} / {bp.XPPerLevel}";
+        levelText.text = $"{bp.Level}";
+        xpText.text = bp.IsMaxLevel ? "MAX" : $"{bp.XP}";
     }
 
     private void RefreshPremiumState()
