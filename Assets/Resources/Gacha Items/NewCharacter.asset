@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::GachaCharacterData
   characterID: Tuxedo
   characterName: Tuxedo
-  rarity: 2
+  rarity: 1
   icon: {fileID: 0}
   characterPrefab: {fileID: 919132149155446097, guid: e34ef51279728f4439a1f008089247a9,
     type: 3}
