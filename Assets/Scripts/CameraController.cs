@@ -28,11 +28,28 @@ public class CameraController : MonoBehaviour
     [Tooltip("Lock and hide the cursor when the game starts")]
     [SerializeField] private bool lockCursor = true;
 
+    [Header("Collision Settings")]
+    [Tooltip("Layers the camera will collide with")]
+    [SerializeField] private LayerMask collisionMask = ~0;
+
+    [Tooltip("Radius of the collision check sphere")]
+    [SerializeField] private float collisionRadius = 0.3f;
+
+    [Tooltip("Small gap kept between camera and wall")]
+    [SerializeField] private float collisionPadding = 0.1f;
+
+    [Tooltip("How fast the camera returns to original distance")]
+    [SerializeField] private float returnSpeed = 10f;
+
     private float currentYaw = 0f;
+
+    // Tracks the current distance the camera is pulled in
+    private float currentDistance;
 
     void Start()
     {
         currentYaw = transform.eulerAngles.y;
+        currentDistance = offset.magnitude;
 
         if (lockCursor && useMouseRotation)
         {
@@ -72,7 +89,14 @@ public class CameraController : MonoBehaviour
             FindLocalPlayer();
         }
 
-
+        // Keyboard camera rotation
+        if (useKeyboardRotation)
+        {
+            if (Input.GetKey(KeyCode.Q))
+                currentYaw -= keyboardRotationSpeed * Time.deltaTime;
+            if (Input.GetKey(KeyCode.E))
+                currentYaw += keyboardRotationSpeed * Time.deltaTime;
+        }
 
         // Mouse camera rotation
         if (useMouseRotation &&
@@ -94,7 +118,43 @@ public class CameraController : MonoBehaviour
             0f
         );
 
-        Vector3 position = target.position + rotation * offset;
+        // Direction from target to the ideal camera position
+        Vector3 desiredDir = rotation * offset.normalized;
+        float desiredDistance = offset.magnitude;
+
+        // Cast a sphere from the target outward to detect walls
+        float allowedDistance = desiredDistance;
+
+        if (Physics.SphereCast(
+                target.position,
+                collisionRadius,
+                desiredDir,
+                out RaycastHit hit,
+                desiredDistance,
+                collisionMask,
+                QueryTriggerInteraction.Ignore))
+        {
+            allowedDistance = Mathf.Max(0f, hit.distance - collisionPadding);
+        }
+
+        // When a wall is present, snap in instantly (so we never clip)
+        // When no wall is present, smoothly return to original distance
+        if (allowedDistance < currentDistance)
+        {
+            // Wall in the way -> move in immediately
+            currentDistance = allowedDistance;
+        }
+        else
+        {
+            // No wall -> smoothly move back out
+            currentDistance = Mathf.Lerp(
+                currentDistance,
+                allowedDistance,
+                returnSpeed * Time.deltaTime
+            );
+        }
+
+        Vector3 position = target.position + desiredDir * currentDistance;
 
         transform.position = position;
         transform.rotation = rotation;
@@ -126,5 +186,16 @@ public class CameraController : MonoBehaviour
     public void SetPitchAngle(float angle)
     {
         fixedPitchAngle = angle;
+    }
+
+    // Optional: visualize the collision sphere in the editor
+    private void OnDrawGizmosSelected()
+    {
+        if (target == null) return;
+
+        Quaternion rotation = Quaternion.Euler(fixedPitchAngle, currentYaw, 0f);
+        Vector3 dir = rotation * offset.normalized;
+        Gizmos.color = Color.red;
+        Gizmos.DrawWireSphere(target.position + dir * currentDistance, collisionRadius);
     }
 }
