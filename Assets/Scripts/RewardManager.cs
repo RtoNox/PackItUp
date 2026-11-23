@@ -5,10 +5,8 @@ public class RewardManager : NetworkBehaviour
 {
     [SerializeField] private PointCalculator pointCalculator;
 
-
     private bool rewardsGiven;
 
-    // Call this when the round ends
     public void GiveRewards()
     {
         if (!IsServer || rewardsGiven) return;
@@ -49,8 +47,9 @@ public class RewardManager : NetworkBehaviour
     [ClientRpc]
     private void GiveCurrencyClientRpc(int amount, ClientRpcParams rpcParams = default)
     {
-        // Runs only on the targeted player's machine
         CurrencyManager.Instance.AddCurrency(CurrencyType.Its, amount);
+        BPReward.Instance.AddXP(amount * 2);
+
         LastReward = amount;
         OnRewardReceived?.Invoke(amount);
     }

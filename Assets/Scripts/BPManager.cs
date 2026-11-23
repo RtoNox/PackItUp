@@ -18,6 +18,9 @@ public class BPManager : MonoBehaviour
 
     public TMP_Text timerText;
 
+    [SerializeField] private TMP_Text levelText;
+    [SerializeField] private TMP_Text xpText;
+
     private const string PremiumKey = "HavePremium";
     private bool havePremium;
 
@@ -37,12 +40,24 @@ public class BPManager : MonoBehaviour
     {
         if (BPTimer.Instance != null)
             BPTimer.Instance.OnSeasonReset += RefreshPremiumState;
+        BPReward.Instance.OnBPChanged += Refresh;
+        Refresh();
     }
 
     private void OnDisable()
     {
         if (BPTimer.Instance != null)
             BPTimer.Instance.OnSeasonReset -= RefreshPremiumState;
+        if (BPReward.Instance != null)
+            BPReward.Instance.OnBPChanged -= Refresh;
+    }
+
+    private void Refresh()
+    {
+        var bp = BPReward.Instance;
+
+        levelText.text = $"Level {bp.Level}";
+        xpText.text = bp.IsMaxLevel ? "MAX" : $"{bp.XP} / {bp.XPPerLevel}";
     }
 
     private void RefreshPremiumState()

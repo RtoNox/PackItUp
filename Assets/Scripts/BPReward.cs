@@ -4,8 +4,8 @@ using UnityEngine;
 [Serializable]
 public class BPTier
 {
-    public int freeReward;     // Its given on the free track
-    public int premiumReward;  // Its given on the premium track
+    public int freeReward;
+    public int premiumReward;
 }
 
 public class BPReward : MonoBehaviour
@@ -13,21 +13,21 @@ public class BPReward : MonoBehaviour
     public static BPReward Instance { get; private set; }
 
     [SerializeField] private int xpPerLevel = 1000;
-    [SerializeField] private BPTier[] tiers;   // tiers[0] = level 1, tiers[1] = level 2, ...
+    [SerializeField] private BPTier[] tiers;
 
     private const string XPKey = "BP_XP";
     private const string LevelKey = "BP_Level";
     private const string PremiumKey = "HavePremium";
 
     public int Level { get; private set; }
-    public int XP { get; private set; }          // XP inside the current level
+    public int XP { get; private set; }
     public int XPPerLevel => xpPerLevel;
     public int MaxLevel => tiers.Length;
     public bool IsMaxLevel => Level >= MaxLevel;
     public bool HasPremium => PlayerPrefs.GetInt(PremiumKey, 0) == 1;
 
-    public event Action OnBPChanged;      // UI refreshes on this
-    public event Action<int> OnLevelUp;   // optional: level-up popup/sound
+    public event Action OnBPChanged;
+    public event Action<int> OnLevelUp;
 
     private void Awake()
     {
@@ -55,7 +55,6 @@ public class BPReward : MonoBehaviour
 
         XP += amount;
 
-        // while loop handles gaining several levels at once
         while (XP >= xpPerLevel && Level < MaxLevel)
         {
             XP -= xpPerLevel;
@@ -97,8 +96,6 @@ public class BPReward : MonoBehaviour
         return true;
     }
 
-    // ---- Save / load / reset ----
-
     private string ClaimKey(int level, bool premium) =>
         $"BP_Claimed_{(premium ? "P" : "F")}_{level}";
 
@@ -117,8 +114,6 @@ public class BPReward : MonoBehaviour
 
     private void HandleSeasonReset()
     {
-        // BattlePassTimer already zeroed XP, level and premium in PlayerPrefs;
-        // clear the claim flags and reload so the in-memory values match.
         for (int i = 1; i <= MaxLevel; i++)
         {
             PlayerPrefs.DeleteKey(ClaimKey(i, false));
