@@ -1003,7 +1003,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::AbilitySteal
   ShowTopMostFoldoutHeaderGroup: 1
   abilityName: Steal
-  abilityIcon: {fileID: 0}
+  abilityIcon: {fileID: -2018528061019249615, guid: b3881c04058ff9e4ba76556f5a988b75,
+    type: 3}
   range: 2
   cooldownTime: 30
   assignedKey: 102
@@ -1026,7 +1027,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::AbilityStun
   ShowTopMostFoldoutHeaderGroup: 1
   abilityName: Stun
-  abilityIcon: {fileID: 0}
+  abilityIcon: {fileID: -2561126183406192441, guid: c123a6a3c6e282249ad89bda52a10db1,
+    type: 3}
   range: 2
   stunDuration: 5
   cooldownTime: 30
@@ -1051,7 +1053,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::AbilityJammer
   ShowTopMostFoldoutHeaderGroup: 1
   abilityName: Jammer
-  abilityIcon: {fileID: 0}
+  abilityIcon: {fileID: -8481863187152627506, guid: 473ef8b7a90270b4fb1c9b57122db50f,
+    type: 3}
   cooldownTime: 40
   baseDuration: 10
   durationPerLevel: 2
@@ -1089,14 +1092,20 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::AbilityWarp
   ShowTopMostFoldoutHeaderGroup: 1
   abilityName: Warp
-  abilityIcon: {fileID: 0}
+  abilityIcon: {fileID: -1496630310748263054, guid: a876a5e7e0b49354ab7101a877bd8255,
+    type: 3}
   cooldownTime: 45
   selectionTimeLimit: 3
+  abilityLevel: 1
+  maxAbilityLevel: 3
   assignedKey: 102
   mazeMinX: -65
   mazeMaxX: 65
   mazeMinZ: -65
   mazeMaxZ: 65
+  maxWarpClamp: 45
+  rayStartHeight: 50
+  rayDistance: 120
 --- !u!114 &5928411088714904542
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1111,8 +1120,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::AbilityBehindYou
   ShowTopMostFoldoutHeaderGroup: 1
   abilityName: Behind You
-  abilityIcon: {fileID: 0}
+  abilityIcon: {fileID: -7103181973032267882, guid: b0e25c5d6b099b44a96467fe6d698db6,
+    type: 3}
   cooldownTime: 30
+  behindDistance: 1.5
+  abilityLevel: 1
+  maxAbilityLevel: 3
   assignedKey: 102
 --- !u!114 &4652963551967482938
 MonoBehaviour:
@@ -1128,8 +1141,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::AbilityDuckKun
   ShowTopMostFoldoutHeaderGroup: 1
   abilityName: Duck-Kun
-  abilityIcon: {fileID: 0}
+  abilityIcon: {fileID: -1104702644550570165, guid: cbe719206738cf74483ffb63148dfe58,
+    type: 3}
   cooldownTime: 90
+  abilityLevel: 1
+  maxAbilityLevel: 3
   selfBuffDuration: 60
   selfMultiplier: 2
   enemyDebuffDuration: 30
@@ -1177,7 +1193,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::AbilityMarionette
   ShowTopMostFoldoutHeaderGroup: 1
   abilityName: Marionette
-  abilityIcon: {fileID: 0}
+  abilityIcon: {fileID: -3327862098351469783, guid: 5c0af8776899ee847935f375d3dad63f,
+    type: 3}
   cooldownTime: 60
   maxDuration: 30
   abilityLevel: 1

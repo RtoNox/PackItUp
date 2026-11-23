@@ -43,6 +43,7 @@ public class AbilityCooldownSlotUI : MonoBehaviour
             cooldownRingFill.fillAmount = 1f;
         }
 
+        ClearIconVisual();
         SetReadyVisual();
     }
 
@@ -63,6 +64,7 @@ public class AbilityCooldownSlotUI : MonoBehaviour
 
             if (!isBound)
             {
+                ClearIconVisual();
                 SetReadyVisual();
                 return;
             }
@@ -108,13 +110,36 @@ public class AbilityCooldownSlotUI : MonoBehaviour
         }
     }
 
+    private void SetIconVisual(Sprite icon)
+    {
+        if (abilityIconImage == null) return;
+
+        if (icon != null)
+        {
+            abilityIconImage.sprite = icon;
+            abilityIconImage.enabled = true;
+        }
+        else
+        {
+            ClearIconVisual();
+        }
+    }
+
+    private void ClearIconVisual()
+    {
+        if (abilityIconImage == null) return;
+
+        abilityIconImage.sprite = null;
+        abilityIconImage.enabled = false;
+    }
+
     private void TryBindLocalPlayerAbility()
     {
         boundAbility = null;
         boundNetBehaviour = null;
         isBound = false;
 
-        if (NetworkManager.Singleton == null || NetworkManager.Singleton.SpawnManager == null)
+        if (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsListening || NetworkManager.Singleton.SpawnManager == null)
         {
             if (enableDebugLogs && !loggedWaitingForOwner)
             {
@@ -151,10 +176,7 @@ public class AbilityCooldownSlotUI : MonoBehaviour
                         boundNetBehaviour = mono as NetworkBehaviour;
                         isBound = true;
 
-                        if (abilityIconImage != null && abilityCooldown.AbilityIcon != null)
-                        {
-                            abilityIconImage.sprite = abilityCooldown.AbilityIcon;
-                        }
+                        SetIconVisual(abilityCooldown.AbilityIcon);
 
                         if (enableDebugLogs)
                         {
