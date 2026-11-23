@@ -9,7 +9,7 @@ public class AbilityCooldownSlotUI : MonoBehaviour
     [Tooltip("0 = Slot kiri (Q), 1 = Slot kanan (E)")]
     public int abilitySlotIndex = 0;
 
-    [Tooltip("Set KeyCode.Q untuk kiri, KeyCode.E untuk kanan, atau KeyCode.None untuk pakai urutan slot")]
+    [Tooltip("Set KeyCode.Q untuk kiri, KeyCode.E untuk kanan, atau KeyCode.None untuk otomatis Q (0) / E (1)")]
     public KeyCode targetKey = KeyCode.None;
 
     [Header("UI References")]
@@ -27,6 +27,7 @@ public class AbilityCooldownSlotUI : MonoBehaviour
     public bool enableDebugLogs = true;
 
     private IAbilityCooldown boundAbility;
+    private MonoBehaviour boundMono;
     private NetworkBehaviour boundNetBehaviour;
     private bool isBound = false;
     private float rebindTimer = 0f;
@@ -47,12 +48,69 @@ public class AbilityCooldownSlotUI : MonoBehaviour
         SetReadyVisual();
     }
 
+    private void OnEnable()
+    {
+        PlayerAbilityManager.OnLocalPlayerReady += HandleLocalPlayerReady;
+
+        if (PlayerAbilityManager.LocalInstance != null)
+        {
+            HandleLocalPlayerReady(PlayerAbilityManager.LocalInstance);
+        }
+    }
+
+    private void OnDisable()
+    {
+        PlayerAbilityManager.OnLocalPlayerReady -= HandleLocalPlayerReady;
+
+        if (PlayerAbilityManager.LocalInstance != null)
+        {
+            PlayerAbilityManager.LocalInstance.OnAbilitiesUpdated -= HandleAbilitiesUpdated;
+        }
+    }
+
+    private void HandleLocalPlayerReady(PlayerAbilityManager manager)
+    {
+        if (manager == null) return;
+
+        manager.OnAbilitiesUpdated -= HandleAbilitiesUpdated;
+        manager.OnAbilitiesUpdated += HandleAbilitiesUpdated;
+
+        ForceRebind();
+    }
+
+    private void HandleAbilitiesUpdated(string ability1, string ability2)
+    {
+        ForceRebind();
+    }
+
+    private void ForceRebind()
+    {
+        isBound = false;
+        boundAbility = null;
+        boundMono = null;
+        boundNetBehaviour = null;
+        rebindTimer = 0f;
+        TryBindLocalPlayerAbility();
+    }
+
+    private KeyCode GetExpectedKey()
+    {
+        if (targetKey != KeyCode.None)
+            return targetKey;
+
+        return abilitySlotIndex == 0 ? KeyCode.Q : KeyCode.E;
+    }
+
     private void Update()
     {
-        if (!isBound || boundAbility == null || (boundNetBehaviour != null && (!boundNetBehaviour.IsSpawned || !boundNetBehaviour.IsOwner)))
+        bool invalidNetworkState = boundNetBehaviour != null && (!boundNetBehaviour.IsSpawned || !boundNetBehaviour.IsOwner);
+        bool abilityDisabled = boundMono == null || !boundMono.enabled;
+
+        if (!isBound || boundAbility == null || invalidNetworkState || abilityDisabled)
         {
             isBound = false;
             boundAbility = null;
+            boundMono = null;
             boundNetBehaviour = null;
 
             rebindTimer -= Time.deltaTime;
@@ -68,6 +126,12 @@ public class AbilityCooldownSlotUI : MonoBehaviour
                 SetReadyVisual();
                 return;
             }
+        }
+
+        // Keep icon synced in case it changed
+        if (abilityIconImage != null && abilityIconImage.sprite != boundAbility.AbilityIcon)
+        {
+            SetIconVisual(boundAbility.AbilityIcon);
         }
 
         float remaining = boundAbility.GetRemainingCooldown();
@@ -136,6 +200,7 @@ public class AbilityCooldownSlotUI : MonoBehaviour
     private void TryBindLocalPlayerAbility()
     {
         boundAbility = null;
+        boundMono = null;
         boundNetBehaviour = null;
         isBound = false;
 
@@ -149,6 +214,7 @@ public class AbilityCooldownSlotUI : MonoBehaviour
             return;
         }
 
+        KeyCode expectedKey = GetExpectedKey();
         bool foundOwnedPlayer = false;
 
         foreach (var kvp in NetworkManager.Singleton.SpawnManager.SpawnedObjects)
@@ -161,31 +227,40 @@ public class AbilityCooldownSlotUI : MonoBehaviour
             loggedWaitingForOwner = false;
 
             MonoBehaviour[] monos = netObj.GetComponents<MonoBehaviour>();
-            int foundIndex = 0;
+
+            // Pass 1: Match strictly by assigned key (KeyCode.Q for Slot 0, KeyCode.E for Slot 1)
+            foreach (var mono in monos)
+            {
+                if (mono != null && mono.enabled && mono is IAbilityCooldown abilityCooldown)
+                {
+                    if (abilityCooldown.AssignedKey == expectedKey)
+                    {
+                        BindAbility(mono, abilityCooldown, netObj.OwnerClientId);
+                        return;
+                    }
+                }
+            }
+
+            // Pass 2 (Fallback): If the player selected the exact same ability for both slots
+            // (so AssignedKey was overwritten to KeyCode.E), match by the active ability name for this slot
+            string targetAbilityName = null;
+            if (PlayerAbilityManager.LocalInstance != null)
+            {
+                targetAbilityName = abilitySlotIndex == 0
+                    ? PlayerAbilityManager.LocalInstance.CurrentAbility1
+                    : PlayerAbilityManager.LocalInstance.CurrentAbility2;
+            }
 
             foreach (var mono in monos)
             {
                 if (mono != null && mono.enabled && mono is IAbilityCooldown abilityCooldown)
                 {
-                    bool matchedByKey = (targetKey != KeyCode.None) && (abilityCooldown.AssignedKey == targetKey);
-                    bool matchedByIndex = (targetKey == KeyCode.None) && (foundIndex == abilitySlotIndex);
-
-                    if (matchedByKey || matchedByIndex)
+                    if (!string.IsNullOrEmpty(targetAbilityName) &&
+                        string.Equals(abilityCooldown.AbilityName.Trim(), targetAbilityName.Trim(), System.StringComparison.OrdinalIgnoreCase))
                     {
-                        boundAbility = abilityCooldown;
-                        boundNetBehaviour = mono as NetworkBehaviour;
-                        isBound = true;
-
-                        SetIconVisual(abilityCooldown.AbilityIcon);
-
-                        if (enableDebugLogs)
-                        {
-                            Debug.Log($"[CooldownUI:{name}] Bound ke '{abilityCooldown.AbilityName}' (Key: {abilityCooldown.AssignedKey}) pada Player OwnerClientId={netObj.OwnerClientId}.");
-                        }
+                        BindAbility(mono, abilityCooldown, netObj.OwnerClientId);
                         return;
                     }
-
-                    foundIndex++;
                 }
             }
         }
@@ -194,6 +269,21 @@ public class AbilityCooldownSlotUI : MonoBehaviour
         {
             Debug.LogWarning($"[CooldownUI:{name}] Belum menemukan Spawned Player dengan IsOwner=true.");
             loggedWaitingForOwner = true;
+        }
+    }
+
+    private void BindAbility(MonoBehaviour mono, IAbilityCooldown abilityCooldown, ulong ownerClientId)
+    {
+        boundMono = mono;
+        boundAbility = abilityCooldown;
+        boundNetBehaviour = mono as NetworkBehaviour;
+        isBound = true;
+
+        SetIconVisual(abilityCooldown.AbilityIcon);
+
+        if (enableDebugLogs)
+        {
+            Debug.Log($"[CooldownUI:{name}] Bound ke '{abilityCooldown.AbilityName}' (Key: {abilityCooldown.AssignedKey}) pada Player OwnerClientId={ownerClientId}.");
         }
     }
 }
