@@ -637,6 +637,38 @@ MonoBehaviour:
   m_BlockingMask:
     serializedVersion: 2
     m_Bits: 4294967295
+--- !u!1 &5825340474163479089
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 7223618408235182748}
+  m_Layer: 0
+  m_Name: ModelHolder
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &7223618408235182748
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5825340474163479089}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: -0.99, z: 0}
+  m_LocalScale: {x: 2, y: 2, z: 2}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 8982476890067167877}
+  m_Father: {fileID: 1589944245025499488}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &7154400492277183936
 GameObject:
   m_ObjectHideFlags: 0
@@ -665,6 +697,8 @@ GameObject:
   - component: {fileID: 4652963551967482938}
   - component: {fileID: 2344530436813783721}
   - component: {fileID: -7945247086340036308}
+  - component: {fileID: 5051266103005970678}
+  - component: {fileID: 5186273247328439447}
   m_Layer: 0
   m_Name: Player
   m_TagString: Player
@@ -687,9 +721,9 @@ Transform:
   m_Children:
   - {fileID: 5047413234642398579}
   - {fileID: 8207233235614944733}
-  - {fileID: 8982476890067167877}
   - {fileID: 9200190700370591531}
   - {fileID: 7157075550921832727}
+  - {fileID: 7223618408235182748}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!33 &6793615352191830678
@@ -955,7 +989,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PlayerName
   ShowTopMostFoldoutHeaderGroup: 1
   nameText: {fileID: 8605323239582992943}
-  nameTagTransform: {fileID: 0}
 --- !u!114 &6446947020523890436
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -969,6 +1002,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::AbilitySteal
   ShowTopMostFoldoutHeaderGroup: 1
+  abilityName: Steal
+  abilityIcon: {fileID: 0}
   range: 2
   cooldownTime: 30
   assignedKey: 102
@@ -988,6 +1023,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::AbilityStun
   ShowTopMostFoldoutHeaderGroup: 1
+  abilityName: Stun
+  abilityIcon: {fileID: 0}
   range: 2
   stunDuration: 5
   cooldownTime: 30
@@ -1009,6 +1046,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::AbilityJammer
   ShowTopMostFoldoutHeaderGroup: 1
+  abilityName: Jammer
+  abilityIcon: {fileID: 0}
   cooldownTime: 40
   maxDuration: 10
   indicatorXObject: {fileID: 4757391435941054502}
@@ -1040,6 +1079,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::AbilityWarp
   ShowTopMostFoldoutHeaderGroup: 1
+  abilityName: Warp
+  abilityIcon: {fileID: 0}
   cooldownTime: 45
   selectionTimeLimit: 3
   assignedKey: 102
@@ -1060,6 +1101,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::AbilityBehindYou
   ShowTopMostFoldoutHeaderGroup: 1
+  abilityName: Behind You
+  abilityIcon: {fileID: 0}
   cooldownTime: 30
   assignedKey: 102
 --- !u!114 &4652963551967482938
@@ -1075,6 +1118,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::AbilityDuckKun
   ShowTopMostFoldoutHeaderGroup: 1
+  abilityName: Duck-Kun
+  abilityIcon: {fileID: 0}
   cooldownTime: 90
   selfBuffDuration: 60
   selfMultiplier: 2
@@ -1122,12 +1167,44 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::AbilityMarionette
   ShowTopMostFoldoutHeaderGroup: 1
+  abilityName: Marionette
+  abilityIcon: {fileID: 0}
   cooldownTime: 60
   maxDuration: 30
   obstacleLayer:
     serializedVersion: 2
     m_Bits: 64
   assignedKey: 102
+--- !u!114 &5051266103005970678
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7154400492277183936}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4989f6143cacda8438dd2b5217a9bfbd, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerCharacterVisual
+  ShowTopMostFoldoutHeaderGroup: 1
+  modelHolder: {fileID: 7223618408235182748}
+  fallbackCharacter: {fileID: 0}
+--- !u!114 &5186273247328439447
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7154400492277183936}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fa928b1cadb5f204fbcbb13e4e5ffe85, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerAnimation
+  ShowTopMostFoldoutHeaderGroup: 1
+  animator: {fileID: 3046693907215036671}
+  fallbackController: {fileID: 9100000, guid: 160b0216d0347ea45bbac0b2abf8670e, type: 2}
 --- !u!1 &8904885298641192656
 GameObject:
   m_ObjectHideFlags: 0
@@ -1165,22 +1242,22 @@ PrefabInstance:
   serializedVersion: 2
   m_Modification:
     serializedVersion: 3
-    m_TransformParent: {fileID: 1589944245025499488}
+    m_TransformParent: {fileID: 7223618408235182748}
     m_Modifications:
     - target: {fileID: -8679921383154817045, guid: 5577e081770b33f49b0ae04cd0f9019c,
         type: 3}
       propertyPath: m_LocalScale.x
-      value: 1.5
+      value: 0.75
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 5577e081770b33f49b0ae04cd0f9019c,
         type: 3}
       propertyPath: m_LocalScale.y
-      value: 1.5
+      value: 0.75
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 5577e081770b33f49b0ae04cd0f9019c,
         type: 3}
       propertyPath: m_LocalScale.z
-      value: 1.5
+      value: 0.75
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 5577e081770b33f49b0ae04cd0f9019c,
         type: 3}
@@ -1190,7 +1267,7 @@ PrefabInstance:
     - target: {fileID: -8679921383154817045, guid: 5577e081770b33f49b0ae04cd0f9019c,
         type: 3}
       propertyPath: m_LocalPosition.y
-      value: -1
+      value: -0.004999995
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 5577e081770b33f49b0ae04cd0f9019c,
         type: 3}
@@ -1210,7 +1287,7 @@ PrefabInstance:
     - target: {fileID: -8679921383154817045, guid: 5577e081770b33f49b0ae04cd0f9019c,
         type: 3}
       propertyPath: m_LocalRotation.y
-      value: 0
+      value: -0
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 5577e081770b33f49b0ae04cd0f9019c,
         type: 3}
@@ -1235,13 +1312,33 @@ PrefabInstance:
     - target: {fileID: 919132149155446097, guid: 5577e081770b33f49b0ae04cd0f9019c,
         type: 3}
       propertyPath: m_Name
-      value: Idle
+      value: Humanoid
+      objectReference: {fileID: 0}
+    - target: {fileID: 919132149155446097, guid: 5577e081770b33f49b0ae04cd0f9019c,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 2035582688616703362, guid: 5577e081770b33f49b0ae04cd0f9019c,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5866666021909216657, guid: 5577e081770b33f49b0ae04cd0f9019c,
+        type: 3}
+      propertyPath: m_Avatar
+      value: 
       objectReference: {fileID: 0}
     - target: {fileID: 5866666021909216657, guid: 5577e081770b33f49b0ae04cd0f9019c,
         type: 3}
       propertyPath: m_Controller
       value: 
       objectReference: {fileID: 9100000, guid: 160b0216d0347ea45bbac0b2abf8670e, type: 2}
+    - target: {fileID: 7986814019933463497, guid: 5577e081770b33f49b0ae04cd0f9019c,
+        type: 3}
+      propertyPath: m_Enabled
+      value: 1
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -1250,14 +1347,6 @@ PrefabInstance:
         type: 3}
       insertIndex: -1
       addedObject: {fileID: 6626626246619425115}
-    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 5577e081770b33f49b0ae04cd0f9019c,
-        type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 3429349300842951559}
-    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 5577e081770b33f49b0ae04cd0f9019c,
-        type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 5293931748481718160}
   m_SourcePrefab: {fileID: 100100000, guid: 5577e081770b33f49b0ae04cd0f9019c, type: 3}
 --- !u!95 &3046693907215036671 stripped
 Animator:
@@ -1317,56 +1406,6 @@ MonoBehaviour:
   SwitchTransformSpaceWhenParented: 0
   Interpolate: 1
   SlerpPosition: 0
---- !u!114 &3429349300842951559
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8639025103724326975}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fa928b1cadb5f204fbcbb13e4e5ffe85, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::PlayerAnimation
-  ShowTopMostFoldoutHeaderGroup: 1
-  animator: {fileID: 3046693907215036671}
-  networkAnimator: {fileID: 5293931748481718160}
---- !u!114 &5293931748481718160
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8639025103724326975}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a26d33ce984de8d46981777defa993c3, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::OwnerNetworkAnimator
-  ShowTopMostFoldoutHeaderGroup: 1
-  NetworkAnimatorExpanded: 0
-  AuthorityMode: 0
-  m_Animator: {fileID: 3046693907215036671}
-  TransitionStateInfoList:
-  - IsCrossFadeExit: 0
-    Layer: 0
-    OriginatingState: 2081823275
-    DestinationState: -1434604862
-    TransitionDuration: 0.25
-    TriggerNameHash: -1434604862
-    TransitionIndex: 1
-  AnimatorParameterEntries:
-    ParameterEntries:
-    - name: IsRunning
-      NameHash: -887662580
-      Synchronize: 1
-      ParameterType: 4
-    - name: Emote
-      NameHash: -1434604862
-      Synchronize: 1
-      ParameterType: 9
-  AnimatorParametersExpanded: 0
 --- !u!4 &8982476890067167877 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: 5577e081770b33f49b0ae04cd0f9019c,

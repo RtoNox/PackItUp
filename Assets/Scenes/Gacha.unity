@@ -4295,6 +4295,21 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 6054620841918711856, guid: 5b330872046be1f469780ef370378a80,
+        type: 3}
+      propertyPath: m_AnchorMax.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6054620841918711856, guid: 5b330872046be1f469780ef370378a80,
+        type: 3}
+      propertyPath: m_AnchorMax.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6054620841918711856, guid: 5b330872046be1f469780ef370378a80,
+        type: 3}
+      propertyPath: m_SizeDelta.x
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 6834219956171647890, guid: 5b330872046be1f469780ef370378a80,
         type: 3}
       propertyPath: m_AnchorMax.x
@@ -4308,7 +4323,7 @@ PrefabInstance:
     - target: {fileID: 7714378067266297380, guid: 5b330872046be1f469780ef370378a80,
         type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: -249.9999
+      value: -249.99985
       objectReference: {fileID: 0}
     - target: {fileID: 8952630835204065410, guid: 5b330872046be1f469780ef370378a80,
         type: 3}
@@ -4400,18 +4415,14 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::GachaManager
   gachaScreenUI: {fileID: 1833466352}
   shopScreenUI: {fileID: 687555180}
-  itemPool:
-  - {fileID: 11400000, guid: b67a9f71d4e700942a140a72aaf87bff, type: 2}
-  - {fileID: 11400000, guid: b89510aa4082d464eb2d315e1bae6611, type: 2}
-  - {fileID: 11400000, guid: 157efbb6520c4f74abcfeb8e194934b0, type: 2}
-  - {fileID: 11400000, guid: c0342a12ec4e36745b2dcac646f140c9, type: 2}
-  - {fileID: 11400000, guid: f5b6c1994d334984a9c1a127f6defab3, type: 2}
-  - {fileID: 11400000, guid: bcc2a98179ccaef4baa0e9d505ef57cd, type: 2}
+  characterPool:
+  - {fileID: 11400000, guid: 57d56ab3141c05540adb2ef9f7704db7, type: 2}
+  - {fileID: 11400000, guid: 42e35359ecc5a874b8a1183933656de7, type: 2}
   rDropRate: 70
   srDropRate: 25
   ssrDropRate: 5
   autoConvertDuplicatesOnPull: 0
-  resultPanel: {fileID: 0}
+  resultPanel: {fileID: 1779150194}
   resultText: {fileID: 1779150195}
   resultIcon: {fileID: 0}
 --- !u!1 &1779150194

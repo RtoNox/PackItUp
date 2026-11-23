@@ -3,27 +3,19 @@ using System.Collections.Generic;
 using UnityEngine;
 
 [Serializable]
-public class InventoryEntry
+public class CharacterEntry
 {
-    public string itemID;
-    public string itemName;
+    public string characterID;
+    public string characterName;
     public ItemRarity rarity;
-    public ClothingType clothingType;
     public int count;
 }
 
 [Serializable]
-public class EquippedSlot
+public class CharacterInventorySaveData
 {
-    public ClothingType slotType;
-    public string itemID;
-}
-
-[Serializable]
-public class InventorySaveData
-{
-    public List<InventoryEntry> entries = new List<InventoryEntry>();
-    public List<EquippedSlot> equippedSlots = new List<EquippedSlot>();
+    public List<CharacterEntry> entries = new List<CharacterEntry>();
+    public string equippedCharacterID;
 }
 
 public class PlayerInventory : MonoBehaviour
@@ -46,7 +38,14 @@ public class PlayerInventory : MonoBehaviour
         }
     }
 
-    private const string SAVE_KEY = "Player_Clothing_Inventory_v1";
+    private const string SAVE_KEY = "Player_Character_Inventory_v1";
+
+    [Header("Character Database (Drag ALL GachaCharacterData assets here)")]
+    [SerializeField] private List<GachaCharacterData> allCharacters = new List<GachaCharacterData>();
+
+    [Header("Default Starter Character (Optional)")]
+    [Tooltip("Automatically equipped if the player has no character selected yet.")]
+    [SerializeField] private GachaCharacterData defaultCharacter;
 
     [Header("Duplicate Conversion Settings (Adjustable)")]
     [SerializeField] private CurrencyType duplicateCurrencyType = CurrencyType.Its;
@@ -56,9 +55,8 @@ public class PlayerInventory : MonoBehaviour
 
     public CurrencyType DuplicateCurrencyType => duplicateCurrencyType;
 
-    // Optional runtime lookup if you attach icons/models later
-    private readonly Dictionary<string, GachaItemData> assetLookup = new Dictionary<string, GachaItemData>();
-    private InventorySaveData saveData = new InventorySaveData();
+    private readonly Dictionary<string, GachaCharacterData> assetLookup = new Dictionary<string, GachaCharacterData>();
+    private CharacterInventorySaveData saveData = new CharacterInventorySaveData();
 
     public event Action OnInventoryChanged;
 
@@ -72,64 +70,123 @@ public class PlayerInventory : MonoBehaviour
 
         _instance = this;
         DontDestroyOnLoad(gameObject);
+
+        RegisterAllCharacters();
         LoadInventory();
+        EnsureStarterCharacter();
+    }
+
+    private void RegisterAllCharacters()
+    {
+        if (defaultCharacter != null && !string.IsNullOrEmpty(defaultCharacter.characterID))
+        {
+            assetLookup[defaultCharacter.characterID] = defaultCharacter;
+        }
+
+        foreach (GachaCharacterData character in allCharacters)
+        {
+            if (character != null && !string.IsNullOrEmpty(character.characterID))
+            {
+                assetLookup[character.characterID] = character;
+            }
+        }
+    }
+
+    private void EnsureStarterCharacter()
+    {
+        if (defaultCharacter == null || string.IsNullOrEmpty(defaultCharacter.characterID))
+            return;
+
+        if (!HasCharacter(defaultCharacter.characterID))
+        {
+            saveData.entries.Add(new CharacterEntry
+            {
+                characterID = defaultCharacter.characterID,
+                characterName = defaultCharacter.characterName,
+                rarity = defaultCharacter.rarity,
+                count = 1
+            });
+        }
+
+        if (string.IsNullOrEmpty(saveData.equippedCharacterID))
+        {
+            saveData.equippedCharacterID = defaultCharacter.characterID;
+        }
+
+        SaveInventory();
     }
 
     // =========================================================
-    // ADD & QUERY ITEMS
+    // ADD & QUERY CHARACTERS
     // =========================================================
 
-    public void AddItem(GachaItemData item, int amount = 1)
+    public void AddCharacter(GachaCharacterData character, int amount = 1)
     {
-        if (item == null || string.IsNullOrEmpty(item.itemID))
+        if (character == null || string.IsNullOrEmpty(character.characterID))
         {
-            Debug.LogWarning("PlayerInventory: Item or Item ID is missing.");
+            Debug.LogWarning("PlayerInventory: Character or Character ID is missing.");
             return;
         }
 
-        assetLookup[item.itemID] = item;
+        assetLookup[character.characterID] = character;
 
-        InventoryEntry existing = saveData.entries.Find(e => e.itemID == item.itemID);
+        CharacterEntry existing = saveData.entries.Find(e => e.characterID == character.characterID);
         if (existing != null)
         {
             existing.count += amount;
-            existing.itemName = item.itemName;
-            existing.rarity = item.rarity;
-            existing.clothingType = item.clothingType;
+            existing.characterName = character.characterName;
+            existing.rarity = character.rarity;
         }
         else
         {
-            saveData.entries.Add(new InventoryEntry
+            saveData.entries.Add(new CharacterEntry
             {
-                itemID = item.itemID,
-                itemName = item.itemName,
-                rarity = item.rarity,
-                clothingType = item.clothingType,
+                characterID = character.characterID,
+                characterName = character.characterName,
+                rarity = character.rarity,
                 count = amount
             });
+
+            // Auto-equip if nothing is equipped yet
+            if (string.IsNullOrEmpty(saveData.equippedCharacterID))
+            {
+                saveData.equippedCharacterID = character.characterID;
+            }
         }
 
         SaveInventory();
         OnInventoryChanged?.Invoke();
 
-        Debug.Log($"[Inventory] +{amount} [{item.rarity}] {item.clothingType}: {item.itemName}");
+        Debug.Log($"[Inventory] +{amount} [{character.rarity}] Character: {character.characterName}");
     }
 
-    public List<InventoryEntry> GetAllOwnedItems()
+    public List<CharacterEntry> GetAllOwnedCharacters()
     {
         return saveData.entries.FindAll(e => e.count > 0);
     }
 
-    public bool HasItem(string itemID)
+    public bool HasCharacter(string characterID)
     {
-        InventoryEntry entry = saveData.entries.Find(e => e.itemID == itemID);
+        CharacterEntry entry = saveData.entries.Find(e => e.characterID == characterID);
         return entry != null && entry.count > 0;
     }
 
-    public GachaItemData GetItemAsset(string itemID)
+    public GachaCharacterData GetCharacterAsset(string characterID)
     {
-        assetLookup.TryGetValue(itemID, out GachaItemData asset);
-        return asset;
+        if (string.IsNullOrEmpty(characterID))
+            return defaultCharacter;
+
+        if (assetLookup.TryGetValue(characterID, out GachaCharacterData asset))
+            return asset;
+
+        GachaCharacterData found = allCharacters.Find(c => c != null && c.characterID == characterID);
+        if (found != null)
+        {
+            assetLookup[characterID] = found;
+            return found;
+        }
+
+        return defaultCharacter;
     }
 
     // =========================================================
@@ -155,7 +212,7 @@ public class PlayerInventory : MonoBehaviour
         totalDuplicates = 0;
         totalCurrency = 0;
 
-        foreach (InventoryEntry entry in saveData.entries)
+        foreach (CharacterEntry entry in saveData.entries)
         {
             if (entry.count > 1)
             {
@@ -171,7 +228,7 @@ public class PlayerInventory : MonoBehaviour
         totalDuplicatesConverted = 0;
         totalCurrencyGained = 0;
 
-        foreach (InventoryEntry entry in saveData.entries)
+        foreach (CharacterEntry entry in saveData.entries)
         {
             if (entry.count > 1)
             {
@@ -181,7 +238,7 @@ public class PlayerInventory : MonoBehaviour
                 totalDuplicatesConverted += extraCopies;
                 totalCurrencyGained += reward;
 
-                // Keep 1 copy so ownership and equipped clothing remain intact
+                // Keep 1 copy so character ownership and active selection remain intact
                 entry.count = 1;
             }
         }
@@ -204,70 +261,58 @@ public class PlayerInventory : MonoBehaviour
         SaveInventory();
         OnInventoryChanged?.Invoke();
 
-        Debug.Log($"[Inventory] Converted {totalDuplicatesConverted} duplicate(s) -> +{totalCurrencyGained} {duplicateCurrencyType}");
+        Debug.Log($"[Inventory] Converted {totalDuplicatesConverted} duplicate character(s) -> +{totalCurrencyGained} {duplicateCurrencyType}");
         return true;
     }
 
     // =========================================================
-    // 6-SLOT EQUIPMENT SYSTEM (1 PER CLOTHING TYPE)
+    // CHARACTER EQUIP SYSTEM (1 ACTIVE CHARACTER)
     // =========================================================
 
-    public void ToggleEquipItem(string itemID)
+    public void EquipCharacter(string characterID)
     {
-        InventoryEntry item = saveData.entries.Find(e => e.itemID == itemID && e.count > 0);
-        if (item == null) return;
+        CharacterEntry entry = saveData.entries.Find(e => e.characterID == characterID && e.count > 0);
+        if (entry == null) return;
 
-        // If already wearing this exact item, take it off
-        if (IsItemEquipped(itemID))
+        // If clicking the already-equipped character, revert to starter character if one is set
+        if (saveData.equippedCharacterID == characterID)
         {
-            UnequipSlot(item.clothingType);
+            if (defaultCharacter != null && defaultCharacter.characterID != characterID)
+            {
+                saveData.equippedCharacterID = defaultCharacter.characterID;
+                SaveInventory();
+                OnInventoryChanged?.Invoke();
+            }
             return;
         }
 
-        // Otherwise equip it into its matching ClothingType slot
-        EquippedSlot slot = saveData.equippedSlots.Find(s => s.slotType == item.clothingType);
-        if (slot != null)
-        {
-            slot.itemID = itemID;
-        }
-        else
-        {
-            saveData.equippedSlots.Add(new EquippedSlot
-            {
-                slotType = item.clothingType,
-                itemID = itemID
-            });
-        }
-
+        saveData.equippedCharacterID = characterID;
         SaveInventory();
         OnInventoryChanged?.Invoke();
 
-        Debug.Log($"[Equipped] {item.clothingType} -> {item.itemName}");
+        Debug.Log($"[Equipped Character] -> {entry.characterName}");
     }
 
-    public void UnequipSlot(ClothingType slotType)
+    public CharacterEntry GetEquippedCharacter()
     {
-        EquippedSlot slot = saveData.equippedSlots.Find(s => s.slotType == slotType);
-        if (slot != null)
-        {
-            slot.itemID = "";
-            SaveInventory();
-            OnInventoryChanged?.Invoke();
-        }
-    }
-
-    public InventoryEntry GetEquippedInSlot(ClothingType slotType)
-    {
-        EquippedSlot slot = saveData.equippedSlots.Find(s => s.slotType == slotType);
-        if (slot == null || string.IsNullOrEmpty(slot.itemID))
+        if (string.IsNullOrEmpty(saveData.equippedCharacterID))
             return null;
 
-        return saveData.entries.Find(e => e.itemID == slot.itemID && e.count > 0);
+        return saveData.entries.Find(e => e.characterID == saveData.equippedCharacterID && e.count > 0);
     }
 
-    public bool IsItemEquipped(string itemID)
+    public string GetEquippedCharacterID()
     {
-        return saveData.equippedSlots.Exists(s => s.itemID == itemID);
+        CharacterEntry equipped = GetEquippedCharacter();
+        if (equipped != null)
+            return equipped.characterID;
+
+        return defaultCharacter != null ? defaultCharacter.characterID : "";
+    }
+
+    public bool IsCharacterEquipped(string characterID)
+    {
+        return !string.IsNullOrEmpty(characterID) && saveData.equippedCharacterID == characterID;
     }
 
     // =========================================================
@@ -285,17 +330,18 @@ public class PlayerInventory : MonoBehaviour
     {
         if (!PlayerPrefs.HasKey(SAVE_KEY))
         {
-            saveData = new InventorySaveData();
+            saveData = new CharacterInventorySaveData();
             return;
         }
 
         string json = PlayerPrefs.GetString(SAVE_KEY);
-        saveData = JsonUtility.FromJson<InventorySaveData>(json) ?? new InventorySaveData();
+        saveData = JsonUtility.FromJson<CharacterInventorySaveData>(json) ?? new CharacterInventorySaveData();
     }
 
     public void ClearInventory()
     {
-        saveData = new InventorySaveData();
+        saveData = new CharacterInventorySaveData();
+        EnsureStarterCharacter();
         SaveInventory();
         OnInventoryChanged?.Invoke();
     }

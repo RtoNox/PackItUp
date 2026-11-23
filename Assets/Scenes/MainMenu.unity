@@ -6355,6 +6355,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d6ea1e5d59fe05545aaad9472b8035b5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerInventory
+  allGameItems:
+  - {fileID: 11400000, guid: 93c5176d504e0824c90bbc2fd7dde54f, type: 2}
+  - {fileID: 11400000, guid: 86d43b2c7ade3634ebeac5c26dff4659, type: 2}
+  - {fileID: 11400000, guid: cc1260c7bdf316f43adbe06abdcc6158, type: 2}
+  - {fileID: 11400000, guid: 8f4b3e044dd923841885331741c751b9, type: 2}
   duplicateCurrencyType: 0
   duplicateRewardR: 20
   duplicateRewardSR: 100
@@ -6623,7 +6628,7 @@ PrefabInstance:
     - target: {fileID: 7714378067266297380, guid: 5b330872046be1f469780ef370378a80,
         type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: -249.99995
+      value: -249.99973
       objectReference: {fileID: 0}
     - target: {fileID: 7910660933658638438, guid: 5b330872046be1f469780ef370378a80,
         type: 3}
@@ -6694,21 +6699,6 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 2113950582}
     m_Modifications:
-    - target: {fileID: 169538274164975865, guid: f17bfddf96ee5024f901133302059aa4,
-        type: 3}
-      propertyPath: m_AnchorMax.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 169538274164975865, guid: f17bfddf96ee5024f901133302059aa4,
-        type: 3}
-      propertyPath: m_AnchorMax.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 169538274164975865, guid: f17bfddf96ee5024f901133302059aa4,
-        type: 3}
-      propertyPath: m_AnchorMin.y
-      value: 0
-      objectReference: {fileID: 0}
     - target: {fileID: 358823547877551633, guid: f17bfddf96ee5024f901133302059aa4,
         type: 3}
       propertyPath: m_Pivot.x
@@ -6809,21 +6799,6 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 6926538219732646045, guid: f17bfddf96ee5024f901133302059aa4,
-        type: 3}
-      propertyPath: m_AnchorMax.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 6926538219732646045, guid: f17bfddf96ee5024f901133302059aa4,
-        type: 3}
-      propertyPath: m_AnchorMax.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 6926538219732646045, guid: f17bfddf96ee5024f901133302059aa4,
-        type: 3}
-      propertyPath: m_SizeDelta.x
-      value: 0
-      objectReference: {fileID: 0}
     - target: {fileID: 7344276476579518412, guid: f17bfddf96ee5024f901133302059aa4,
         type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Target
@@ -6833,11 +6808,6 @@ PrefabInstance:
         type: 3}
       propertyPath: m_Name
       value: Ability UI
-      objectReference: {fileID: 0}
-    - target: {fileID: 8365554557246295720, guid: f17bfddf96ee5024f901133302059aa4,
-        type: 3}
-      propertyPath: m_IsActive
-      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

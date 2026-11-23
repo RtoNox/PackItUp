@@ -10,6 +10,7 @@ public class PlayerPoints : NetworkBehaviour
             NetworkVariableWritePermission.Server
         );
 
+    // Menyimpan NetworkObjectReference dari player yang sedang mengaitkan Marionette ke player ini
     public NetworkVariable<NetworkObjectReference> marionetteCasterRef = new NetworkVariable<NetworkObjectReference>(
         default,
         NetworkVariableReadPermission.Everyone,
@@ -37,26 +38,19 @@ public class PlayerPoints : NetworkBehaviour
             PlayerPoints casterPoints = casterNetObj.GetComponent<PlayerPoints>();
             if (casterPoints != null)
             {
-                float marionetteMultiplier = 1.0f;
-                AbilityMarionette marionette = casterNetObj.GetComponent<AbilityMarionette>();
-                if (marionette != null)
-                {
-                    marionetteMultiplier = marionette.GetScoreMultiplier();
-                }
-
-                int stolenPoints = Mathf.RoundToInt(finalPoints * marionetteMultiplier);
-
-                casterPoints.Points.Value += stolenPoints;
+                // Poin DIALIHKAN/DICURI ke Caster (Player A), Target (Player B) tidak dapat apa-apa
+                casterPoints.Points.Value += finalPoints;
 
                 Debug.Log(
                     $"[Marionette] Poin DICURI! Player {OwnerClientId} mendapat 0 poin. " +
-                    $"Sebanyak {stolenPoints} poin (Base: {finalPoints} x Marionette: {marionetteMultiplier:0.00}x) " +
-                    $"dialihkan ke Caster (Player {casterNetObj.OwnerClientId}). Total poin Caster sekarang: {casterPoints.Points.Value}."
+                    $"Sebanyak {finalPoints} poin dialihkan ke Caster (Player {casterNetObj.OwnerClientId}). " +
+                    $"Total poin Caster sekarang: {casterPoints.Points.Value}."
                 );
-                return;
+                return; // Keluar agar poin tidak masuk ke player ini
             }
         }
 
+        // Jika tidak sedang di-Marionette, poin masuk normal ke diri sendiri
         Points.Value += finalPoints;
 
         Debug.Log(

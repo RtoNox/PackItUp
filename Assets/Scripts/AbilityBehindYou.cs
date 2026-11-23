@@ -53,11 +53,6 @@ public class AbilityBehindYou : NetworkBehaviour, IAbilityCooldown
 
         if (Input.GetKeyDown(assignedKey))
         {
-            if (AbilityJammer.IsPlayerJammed(this, "BehindYou"))
-            {
-                return;
-            }
-
             if (isOnCooldown)
             {
                 Debug.Log("[BehindYou] Skill masih cooldown!");
@@ -71,11 +66,6 @@ public class AbilityBehindYou : NetworkBehaviour, IAbilityCooldown
     [ServerRpc]
     private void TryUseBehindYouServerRpc()
     {
-        if (AbilityJammer.IsPlayerJammed(this, "BehindYou"))
-        {
-            return;
-        }
-
         if (Time.time < lastUseTime + cooldownTime)
         {
             return;

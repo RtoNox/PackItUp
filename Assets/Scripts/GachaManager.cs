@@ -15,7 +15,7 @@ public class GachaManager : MonoBehaviour
 {
     private struct GachaPullResult
     {
-        public GachaItemData item;
+        public GachaCharacterData character;
         public bool isDuplicate;
         public bool convertedToCurrency;
         public int convertedCurrency;
@@ -26,8 +26,8 @@ public class GachaManager : MonoBehaviour
     public GameObject shopScreenUI;
     public GachaMenuState currentState { get; private set; }
 
-    [Header("Gacha Item Pool (Drag your 6+ items here)")]
-    [SerializeField] private List<GachaItemData> itemPool = new List<GachaItemData>();
+    [Header("Gacha Character Pool (Drag your GachaCharacterData assets here)")]
+    [SerializeField] private List<GachaCharacterData> characterPool = new List<GachaCharacterData>();
 
     [Header("Rarity Drop Rates (%)")]
     [SerializeField] private float rDropRate = 70f;
@@ -74,7 +74,7 @@ public class GachaManager : MonoBehaviour
 
     public void PullOnce()
     {
-        GachaPullResult? result = RollSingleItem();
+        GachaPullResult? result = RollSingleCharacter();
         if (!result.HasValue) return;
 
         GachaPullResult pull = result.Value;
@@ -87,9 +87,9 @@ public class GachaManager : MonoBehaviour
 
         if (resultIcon != null)
         {
-            bool hasIcon = pull.item.icon != null;
+            bool hasIcon = pull.character.icon != null;
             resultIcon.gameObject.SetActive(hasIcon);
-            if (hasIcon) resultIcon.sprite = pull.item.icon;
+            if (hasIcon) resultIcon.sprite = pull.character.icon;
         }
     }
 
@@ -99,7 +99,7 @@ public class GachaManager : MonoBehaviour
 
         for (int i = 0; i < 10; i++)
         {
-            GachaPullResult? result = RollSingleItem();
+            GachaPullResult? result = RollSingleCharacter();
             if (result.HasValue)
                 results.Add(result.Value);
         }
@@ -131,7 +131,7 @@ public class GachaManager : MonoBehaviour
 
     private string FormatPullResultLine(GachaPullResult pull)
     {
-        string baseInfo = $"[{pull.item.rarity}] [{pull.item.clothingType}] {pull.item.itemName}";
+        string baseInfo = $"[{pull.character.rarity}] {pull.character.characterName}";
 
         if (pull.convertedToCurrency)
         {
@@ -149,34 +149,33 @@ public class GachaManager : MonoBehaviour
     // CORE GACHA LOGIC
     // =========================================================
 
-    private GachaPullResult? RollSingleItem()
+    private GachaPullResult? RollSingleCharacter()
     {
-        if (itemPool == null || itemPool.Count == 0)
+        if (characterPool == null || characterPool.Count == 0)
         {
-            Debug.LogWarning("GachaManager: Item Pool is empty! Assign GachaItemData assets in the Inspector.");
+            Debug.LogWarning("GachaManager: Character Pool is empty! Assign GachaCharacterData assets in the Inspector.");
             return null;
         }
 
         ItemRarity rolledRarity = RollRarity();
 
-        // Filter pool for items matching the rolled rarity
-        List<GachaItemData> matchingItems = itemPool.FindAll(item => item != null && item.rarity == rolledRarity);
+        List<GachaCharacterData> matchingCharacters =
+            characterPool.FindAll(c => c != null && c.rarity == rolledRarity);
 
-        // Fallback if no items exist for that rarity yet
-        if (matchingItems.Count == 0)
+        if (matchingCharacters.Count == 0)
         {
-            matchingItems = itemPool.FindAll(item => item != null);
-            if (matchingItems.Count == 0) return null;
+            matchingCharacters = characterPool.FindAll(c => c != null);
+            if (matchingCharacters.Count == 0) return null;
         }
 
-        GachaItemData wonItem = matchingItems[Random.Range(0, matchingItems.Count)];
+        GachaCharacterData wonCharacter = matchingCharacters[Random.Range(0, matchingCharacters.Count)];
 
-        bool alreadyOwned = !string.IsNullOrEmpty(wonItem.itemID) &&
-                            PlayerInventory.Instance.HasItem(wonItem.itemID);
+        bool alreadyOwned = !string.IsNullOrEmpty(wonCharacter.characterID) &&
+                            PlayerInventory.Instance.HasCharacter(wonCharacter.characterID);
 
         if (alreadyOwned && autoConvertDuplicatesOnPull)
         {
-            int rewardAmount = PlayerInventory.Instance.GetDuplicateCurrencyReward(wonItem.rarity);
+            int rewardAmount = PlayerInventory.Instance.GetDuplicateCurrencyReward(wonCharacter.rarity);
             CurrencyType currencyType = PlayerInventory.Instance.DuplicateCurrencyType;
 
             if (CurrencyManager.Instance != null)
@@ -184,19 +183,18 @@ public class GachaManager : MonoBehaviour
 
             return new GachaPullResult
             {
-                item = wonItem,
+                character = wonCharacter,
                 isDuplicate = true,
                 convertedToCurrency = true,
                 convertedCurrency = rewardAmount
             };
         }
 
-        // Add item (stacks x2, x3... in inventory if already owned)
-        PlayerInventory.Instance.AddItem(wonItem, 1);
+        PlayerInventory.Instance.AddCharacter(wonCharacter, 1);
 
         return new GachaPullResult
         {
-            item = wonItem,
+            character = wonCharacter,
             isDuplicate = alreadyOwned,
             convertedToCurrency = false,
             convertedCurrency = 0
@@ -215,19 +213,6 @@ public class GachaManager : MonoBehaviour
             return ItemRarity.SR;
 
         return ItemRarity.R;
-    }
-
-    private void SaveUnlockedItem(GachaItemData item)
-    {
-        if (string.IsNullOrEmpty(item.itemID)) return;
-
-        PlayerPrefs.SetInt("GachaUnlocked_" + item.itemID, 1);
-        PlayerPrefs.Save();
-    }
-
-    public bool IsItemUnlocked(string itemID)
-    {
-        return PlayerPrefs.GetInt("GachaUnlocked_" + itemID, 0) == 1;
     }
 
     // =========================================================

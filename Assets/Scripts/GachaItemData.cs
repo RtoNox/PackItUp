@@ -7,26 +7,15 @@ public enum ItemRarity
     SSR
 }
 
-public enum ClothingType
+[CreateAssetMenu(fileName = "NewCharacter", menuName = "Gacha/Character Data")]
+public class GachaCharacterData : ScriptableObject
 {
-    Shirt,
-    Pants,
-    Shoe,
-    Hat,
-    Cape,
-    Trail
-}
-
-[CreateAssetMenu(fileName = "NewGachaItem", menuName = "Gacha/Gacha Item")]
-public class GachaItemData : ScriptableObject
-{
-    [Header("Placeholder / Core Info")]
-    public string itemID;
-    public string itemName;
+    [Header("Character Info")]
+    public string characterID;
+    public string characterName;
     public ItemRarity rarity = ItemRarity.R;
-    public ClothingType clothingType = ClothingType.Shirt;
 
-    [Header("Visual Assets (Optional - Leave Empty for Now)")]
+    [Header("Visual Assets")]
     public Sprite icon;
-    public GameObject modelPrefab;
+    public GameObject characterPrefab;
 }

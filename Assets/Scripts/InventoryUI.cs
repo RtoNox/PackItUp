@@ -1,4 +1,3 @@
-using System;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.Events;
@@ -6,11 +5,11 @@ using TMPro;
 
 public class InventoryUI : MonoBehaviour
 {
-    [Header("Inventory List Setup")]
+    [Header("Character List Setup")]
     [SerializeField] private Transform slotContainer;
     [SerializeField] private GameObject slotButtonPrefab;
 
-    [Header("Equipped Loadout Display")]
+    [Header("Equipped Character Display")]
     [SerializeField] private TMP_Text equippedLoadoutText;
 
     [Header("Duplicate Conversion UI")]
@@ -35,7 +34,6 @@ public class InventoryUI : MonoBehaviour
         onClose?.Invoke();
     }
 
-    // Hook your new "Convert All Duplicates" UI Button's OnClick() to this method
     public void ConvertAllDuplicates()
     {
         if (PlayerInventory.Instance == null) return;
@@ -54,7 +52,7 @@ public class InventoryUI : MonoBehaviour
             }
             else
             {
-                conversionFeedbackText.text = "No duplicate items to convert.";
+                conversionFeedbackText.text = "No duplicate characters to convert.";
             }
         }
     }
@@ -78,7 +76,7 @@ public class InventoryUI : MonoBehaviour
 
     public void RefreshUI()
     {
-        UpdateEquippedLoadoutText();
+        UpdateEquippedCharacterText();
         UpdateDuplicateButtonUI();
 
         if (slotContainer == null || slotButtonPrefab == null) return;
@@ -88,24 +86,23 @@ public class InventoryUI : MonoBehaviour
             Destroy(child.gameObject);
         }
 
-        foreach (InventoryEntry entry in PlayerInventory.Instance.GetAllOwnedItems())
+        foreach (CharacterEntry entry in PlayerInventory.Instance.GetAllOwnedCharacters())
         {
             GameObject btnObj = Instantiate(slotButtonPrefab, slotContainer);
 
-            bool isEquipped = PlayerInventory.Instance.IsItemEquipped(entry.itemID);
+            bool isEquipped = PlayerInventory.Instance.IsCharacterEquipped(entry.characterID);
             string statusTag = isEquipped ? " [EQUIPPED]" : "";
 
             TMP_Text label = btnObj.GetComponentInChildren<TMP_Text>();
             if (label != null)
             {
-                label.text = $"[{entry.rarity}] [{entry.clothingType}] {entry.itemName} (x{entry.count}){statusTag}";
+                label.text = $"[{entry.rarity}] {entry.characterName} (x{entry.count}){statusTag}";
             }
 
-            // Hide optional Icon child if no sprite asset exists yet
             Transform iconTransform = btnObj.transform.Find("Icon");
             if (iconTransform != null)
             {
-                GachaItemData asset = PlayerInventory.Instance.GetItemAsset(entry.itemID);
+                GachaCharacterData asset = PlayerInventory.Instance.GetCharacterAsset(entry.characterID);
                 bool hasSprite = asset != null && asset.icon != null;
                 iconTransform.gameObject.SetActive(hasSprite);
                 if (hasSprite)
@@ -115,8 +112,8 @@ public class InventoryUI : MonoBehaviour
             Button btn = btnObj.GetComponent<Button>();
             if (btn != null)
             {
-                string capturedID = entry.itemID;
-                btn.onClick.AddListener(() => PlayerInventory.Instance.ToggleEquipItem(capturedID));
+                string capturedID = entry.characterID;
+                btn.onClick.AddListener(() => PlayerInventory.Instance.EquipCharacter(capturedID));
             }
         }
     }
@@ -139,22 +136,13 @@ public class InventoryUI : MonoBehaviour
         }
     }
 
-    private void UpdateEquippedLoadoutText()
+    private void UpdateEquippedCharacterText()
     {
         if (equippedLoadoutText == null) return;
 
-        string summary = "Current Outfit:\n";
-
-        foreach (ClothingType type in Enum.GetValues(typeof(ClothingType)))
-        {
-            InventoryEntry equipped = PlayerInventory.Instance.GetEquippedInSlot(type);
-            string itemDisplay = equipped != null
-                ? $"[{equipped.rarity}] {equipped.itemName}"
-                : "None";
-
-            summary += $"• {type}: {itemDisplay}\n";
-        }
-
-        equippedLoadoutText.text = summary;
+        CharacterEntry equipped = PlayerInventory.Instance.GetEquippedCharacter();
+        equippedLoadoutText.text = equipped != null
+            ? $"Selected Character:\n[{equipped.rarity}] {equipped.characterName}"
+            : "Selected Character:\nDefault";
     }
 }
