@@ -9,6 +9,10 @@ public class AbilityManager : MonoBehaviour
 {
     public const int MaxUpgradeLevel = 3;
 
+    [Header("UI Text Currency & Feedback (Opsional)")]
+    public TMP_Text currencyItsText;
+    public TMP_Text feedbackText;
+
     [Header("UI Text Status Slots (Opsional)")]
     public TMP_Text slot1Text;
     public TMP_Text slot2Text;
@@ -31,8 +35,27 @@ public class AbilityManager : MonoBehaviour
     public TMP_Text duckKunLevelText;
     public TMP_Text marionetteLevelText;
 
+    [Header("UI Text Harga Upgrade (Opsional)")]
+    public TMP_Text costTextSteal;
+    public TMP_Text costTextStun;
+    public TMP_Text costTextJammer;
+    public TMP_Text costTextWarp;
+    public TMP_Text costTextBehindYou;
+    public TMP_Text costTextDuckKun;
+    public TMP_Text costTextMarionette;
+
+    [Header("Tombol Upgrade (Opsional)")]
+    public Button upgradeBtnSteal;
+    public Button upgradeBtnStun;
+    public Button upgradeBtnJammer;
+    public Button upgradeBtnWarp;
+    public Button upgradeBtnBehindYou;
+    public Button upgradeBtnDuckKun;
+    public Button upgradeBtnMarionette;
+
     void Start()
     {
+        SetFeedback("");
         UpdateAllUI();
     }
 
@@ -47,7 +70,7 @@ public class AbilityManager : MonoBehaviour
 
         if (string.IsNullOrEmpty(targetScene))
         {
-            targetScene = "MainMenu"; // Fallback aman
+            targetScene = "MainMenu";
         }
 
         Debug.Log($"[AbilityUI] Tombol Back diklik. Kembali ke scene: {targetScene}");
@@ -87,6 +110,7 @@ public class AbilityManager : MonoBehaviour
         if (string.IsNullOrEmpty(AbilityDataHolder.SelectedAbility1))
         {
             AbilityDataHolder.SelectedAbility1 = abilityName;
+            SetFeedback($"{abilityName} dipasang ke Slot 1 (Q).");
             Debug.Log($"[AbilityUI] '{abilityName}' berhasil di-Equip ke Slot 1 (Q).");
             return;
         }
@@ -94,10 +118,12 @@ public class AbilityManager : MonoBehaviour
         if (string.IsNullOrEmpty(AbilityDataHolder.SelectedAbility2))
         {
             AbilityDataHolder.SelectedAbility2 = abilityName;
+            SetFeedback($"{abilityName} dipasang ke Slot 2 (E).");
             Debug.Log($"[AbilityUI] '{abilityName}' berhasil di-Equip ke Slot 2 (E).");
             return;
         }
 
+        SetFeedback("Kedua slot sudah penuh! Lepas salah satu ability dulu.");
         Debug.LogWarning("[AbilityUI] Kedua slot sudah penuh! Unequip salah satu ability terlebih dahulu.");
     }
 
@@ -106,18 +132,24 @@ public class AbilityManager : MonoBehaviour
         if (IsEquippedInSlot1(abilityName))
         {
             AbilityDataHolder.SelectedAbility1 = "";
+            SetFeedback($"{abilityName} dilepas dari Slot 1 (Q).");
             Debug.Log($"[AbilityUI] '{abilityName}' di-Unequip dari Slot 1 (Q).");
         }
         else if (IsEquippedInSlot2(abilityName))
         {
             AbilityDataHolder.SelectedAbility2 = "";
+            SetFeedback($"{abilityName} dilepas dari Slot 2 (E).");
             Debug.Log($"[AbilityUI] '{abilityName}' di-Unequip dari Slot 2 (E).");
         }
     }
 
     private void UpdateAllUI()
     {
-        // 1. Status Slot Q & E
+        if (currencyItsText != null)
+        {
+            currencyItsText.text = $"{AbilityDataHolder.GetCurrencyIts()} its";
+        }
+
         if (slot1Text != null)
             slot1Text.text = string.IsNullOrEmpty(AbilityDataHolder.SelectedAbility1)
                 ? "Slot 1 (Q): Empty"
@@ -128,7 +160,6 @@ public class AbilityManager : MonoBehaviour
                 ? "Slot 2 (E): Empty"
                 : $"Slot 2 (E): {AbilityDataHolder.SelectedAbility2}";
 
-        // 2. Teks Tombol Equip / UnEquip Dinamis
         UpdateSingleButtonText("Steal", btnTextSteal);
         UpdateSingleButtonText("Stun", btnTextStun);
         UpdateSingleButtonText("Jammer", btnTextJammer);
@@ -137,28 +168,49 @@ public class AbilityManager : MonoBehaviour
         UpdateSingleButtonText("Duck-Kun", btnTextDuckKun);
         UpdateSingleButtonText("Marionette", btnTextMarionette);
 
-        // 3. Teks Level Indicator (1 -> 2 -> MAX)
-        UpdateLevelIndicator(stealLevelText, AbilityDataHolder.GetLevel("Steal"));
-        UpdateLevelIndicator(stunLevelText, AbilityDataHolder.GetLevel("Stun"));
-        UpdateLevelIndicator(jammerLevelText, AbilityDataHolder.GetLevel("Jammer"));
-        UpdateLevelIndicator(warpLevelText, AbilityDataHolder.GetLevel("Warp"));
-        UpdateLevelIndicator(behindYouLevelText, AbilityDataHolder.GetLevel("Behind You"));
-        UpdateLevelIndicator(duckKunLevelText, AbilityDataHolder.GetLevel("Duck-Kun"));
-        UpdateLevelIndicator(marionetteLevelText, AbilityDataHolder.GetLevel("Marionette"));
+        UpdateSingleUpgradeUI("Steal", stealLevelText, costTextSteal, upgradeBtnSteal);
+        UpdateSingleUpgradeUI("Stun", stunLevelText, costTextStun, upgradeBtnStun);
+        UpdateSingleUpgradeUI("Jammer", jammerLevelText, costTextJammer, upgradeBtnJammer);
+        UpdateSingleUpgradeUI("Warp", warpLevelText, costTextWarp, upgradeBtnWarp);
+        UpdateSingleUpgradeUI("Behind You", behindYouLevelText, costTextBehindYou, upgradeBtnBehindYou);
+        UpdateSingleUpgradeUI("Duck-Kun", duckKunLevelText, costTextDuckKun, upgradeBtnDuckKun);
+        UpdateSingleUpgradeUI("Marionette", marionetteLevelText, costTextMarionette, upgradeBtnMarionette);
     }
 
-    private void UpdateLevelIndicator(TMP_Text levelText, int rawLevel)
+    private void UpdateSingleUpgradeUI(string abilityName, TMP_Text levelText, TMP_Text costText, Button upgradeButton)
     {
-        if (levelText == null) return;
+        int rawLevel = AbilityDataHolder.GetLevel(abilityName);
+        bool isMax = rawLevel >= MaxUpgradeLevel;
 
-        if (rawLevel >= MaxUpgradeLevel)
+        if (levelText != null)
         {
-            levelText.text = "MAX";
+            if (isMax)
+            {
+                levelText.text = "MAX";
+            }
+            else
+            {
+                int displayLevel = Mathf.Clamp(rawLevel, 1, MaxUpgradeLevel - 1);
+                levelText.text = displayLevel.ToString();
+            }
         }
-        else
+
+        if (costText != null)
         {
-            int displayLevel = Mathf.Clamp(rawLevel, 1, MaxUpgradeLevel - 1);
-            levelText.text = displayLevel.ToString();
+            if (isMax)
+            {
+                costText.text = "MAX";
+            }
+            else
+            {
+                int cost = AbilityDataHolder.GetUpgradeCost(rawLevel);
+                costText.text = $"{cost} its";
+            }
+        }
+
+        if (upgradeButton != null)
+        {
+            upgradeButton.interactable = !isMax && AbilityDataHolder.CanAffordUpgrade(abilityName);
         }
     }
 
@@ -178,13 +230,35 @@ public class AbilityManager : MonoBehaviour
         if (currentLevel >= MaxUpgradeLevel)
         {
             UpdateAllUI();
+            SetFeedback($"{abilityName} sudah level MAX.");
             Debug.Log($"[Upgrade] Ability {abilityName} sudah mencapai level maksimal (MAX / Lv {MaxUpgradeLevel})!");
             return;
         }
 
+        int cost = AbilityDataHolder.GetUpgradeCost(currentLevel);
+        if (!AbilityDataHolder.TrySpendCurrency(cost))
+        {
+            UpdateAllUI();
+            SetFeedback($"Currency 'its' kurang! Butuh {cost} its.");
+            Debug.LogWarning($"[Upgrade] Currency 'its' tidak cukup untuk upgrade {abilityName} (Lv {currentLevel} -> {currentLevel + 1})! Butuh {cost} its, sisa {AbilityDataHolder.GetCurrencyIts()} its.");
+            return;
+        }
+
         AbilityDataHolder.Upgrade(abilityName);
+        int newLevel = AbilityDataHolder.GetLevel(abilityName);
         UpdateAllUI();
-        Debug.Log($"[Upgrade] Ability {abilityName} sekarang Level {AbilityDataHolder.GetLevel(abilityName)}!");
+        SetFeedback(newLevel >= MaxUpgradeLevel
+            ? $"{abilityName} naik ke MAX!"
+            : $"{abilityName} naik ke Level {newLevel}!");
+        Debug.Log($"[Upgrade] Berhasil upgrade {abilityName} ke Level {newLevel} (-{cost} its, sisa {AbilityDataHolder.GetCurrencyIts()} its)!");
+    }
+
+    private void SetFeedback(string message)
+    {
+        if (feedbackText != null)
+        {
+            feedbackText.text = message;
+        }
     }
 
     // Tombol Klik Equip / UnEquip

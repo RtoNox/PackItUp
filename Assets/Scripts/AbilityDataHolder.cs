@@ -3,6 +3,10 @@ using UnityEngine;
 public static class AbilityDataHolder
 {
     public const int MaxLevel = 3;
+    public const int UpgradeCostLv1To2 = 500;
+    public const int UpgradeCostLv2To3 = 1000;
+
+    private static int fallbackCurrencyIts = 0;
 
     // Menyimpan memori asal scene ("MainMenu" atau "RoomScene") untuk navigasi tombol Back
     public static string PreviousScene = "MainMenu";
@@ -20,7 +24,67 @@ public static class AbilityDataHolder
     public static int LevelDuckKun = 1;
     public static int LevelMarionette = 1;
 
-    // Fungsi untuk mengambil level berdasarkan nama ability
+    public static int GetCurrencyIts()
+    {
+        if (CurrencyManager.Instance != null)
+        {
+            return CurrencyManager.Instance.GetBalance(CurrencyType.Its);
+        }
+
+        return fallbackCurrencyIts;
+    }
+
+    public static int GetUpgradeCost(int currentLevel)
+    {
+        if (currentLevel <= 1) return UpgradeCostLv1To2; // Lv 1 -> 2 = 500 its
+        if (currentLevel == 2) return UpgradeCostLv2To3; // Lv 2 -> MAX = 1000 its
+        return 0;
+    }
+
+    public static int GetUpgradeCostForAbility(string abilityName)
+    {
+        int currentLevel = GetLevel(abilityName);
+        if (currentLevel >= MaxLevel) return 0;
+        return GetUpgradeCost(currentLevel);
+    }
+
+    public static bool CanAffordUpgrade(string abilityName)
+    {
+        int currentLevel = GetLevel(abilityName);
+        if (currentLevel >= MaxLevel) return false;
+
+        int cost = GetUpgradeCost(currentLevel);
+        return GetCurrencyIts() >= cost;
+    }
+
+    public static void AddCurrency(int amount)
+    {
+        if (amount <= 0) return;
+
+        if (CurrencyManager.Instance != null)
+        {
+            CurrencyManager.Instance.AddCurrency(CurrencyType.Its, amount);
+            return;
+        }
+
+        fallbackCurrencyIts += amount;
+    }
+
+    public static bool TrySpendCurrency(int amount)
+    {
+        if (amount < 0) return false;
+        if (amount == 0) return true;
+
+        if (CurrencyManager.Instance != null)
+        {
+            return CurrencyManager.Instance.SpendCurrency(CurrencyType.Its, amount);
+        }
+
+        if (fallbackCurrencyIts < amount) return false;
+        fallbackCurrencyIts -= amount;
+        return true;
+    }
+
     public static int GetLevel(string abilityName)
     {
         if (string.IsNullOrEmpty(abilityName)) return 1;
@@ -41,7 +105,6 @@ public static class AbilityDataHolder
         }
     }
 
-    // Fungsi untuk menaikkan level ability (Maksimal Lv 3)
     public static void Upgrade(string abilityName)
     {
         if (string.IsNullOrEmpty(abilityName)) return;
