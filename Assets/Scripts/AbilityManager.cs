@@ -36,6 +36,11 @@ public class AbilityManager : MonoBehaviour
         UpdateAllUI();
     }
 
+    void OnEnable()
+    {
+        UpdateAllUI();
+    }
+
     public void OnBackFromAbilityPanel()
     {
         string targetScene = AbilityDataHolder.PreviousScene;
@@ -49,12 +54,23 @@ public class AbilityManager : MonoBehaviour
         SceneManager.LoadScene(targetScene);
     }
 
+    private bool IsEquippedInSlot1(string abilityName)
+    {
+        return !string.IsNullOrEmpty(AbilityDataHolder.SelectedAbility1) &&
+               AbilityDataHolder.SelectedAbility1.Equals(abilityName, System.StringComparison.OrdinalIgnoreCase);
+    }
+
+    private bool IsEquippedInSlot2(string abilityName)
+    {
+        return !string.IsNullOrEmpty(AbilityDataHolder.SelectedAbility2) &&
+               AbilityDataHolder.SelectedAbility2.Equals(abilityName, System.StringComparison.OrdinalIgnoreCase);
+    }
+
     public void OnAbilityButtonClicked(string abilityName)
     {
-        bool isEquippedInSlot1 = AbilityDataHolder.SelectedAbility1.Equals(abilityName, System.StringComparison.OrdinalIgnoreCase);
-        bool isEquippedInSlot2 = AbilityDataHolder.SelectedAbility2.Equals(abilityName, System.StringComparison.OrdinalIgnoreCase);
+        if (string.IsNullOrEmpty(abilityName)) return;
 
-        if (isEquippedInSlot1 || isEquippedInSlot2)
+        if (IsEquippedInSlot1(abilityName) || IsEquippedInSlot2(abilityName))
         {
             UnequipAbility(abilityName);
         }
@@ -87,12 +103,12 @@ public class AbilityManager : MonoBehaviour
 
     private void UnequipAbility(string abilityName)
     {
-        if (AbilityDataHolder.SelectedAbility1.Equals(abilityName, System.StringComparison.OrdinalIgnoreCase))
+        if (IsEquippedInSlot1(abilityName))
         {
             AbilityDataHolder.SelectedAbility1 = "";
             Debug.Log($"[AbilityUI] '{abilityName}' di-Unequip dari Slot 1 (Q).");
         }
-        else if (AbilityDataHolder.SelectedAbility2.Equals(abilityName, System.StringComparison.OrdinalIgnoreCase))
+        else if (IsEquippedInSlot2(abilityName))
         {
             AbilityDataHolder.SelectedAbility2 = "";
             Debug.Log($"[AbilityUI] '{abilityName}' di-Unequip dari Slot 2 (E).");
@@ -150,14 +166,14 @@ public class AbilityManager : MonoBehaviour
     {
         if (buttonText == null) return;
 
-        bool isEquipped = AbilityDataHolder.SelectedAbility1.Equals(abilityName, System.StringComparison.OrdinalIgnoreCase) ||
-                          AbilityDataHolder.SelectedAbility2.Equals(abilityName, System.StringComparison.OrdinalIgnoreCase);
-
+        bool isEquipped = IsEquippedInSlot1(abilityName) || IsEquippedInSlot2(abilityName);
         buttonText.text = isEquipped ? "UnEquip" : "Equip";
     }
 
     public void UpgradeAbility(string abilityName)
     {
+        if (string.IsNullOrEmpty(abilityName)) return;
+
         int currentLevel = AbilityDataHolder.GetLevel(abilityName);
         if (currentLevel >= MaxUpgradeLevel)
         {

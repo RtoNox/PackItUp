@@ -15,6 +15,12 @@ public class AbilitySteal : NetworkBehaviour, IAbilityCooldown
     private float clientCooldownEndTime = -1f;
     private bool wasOnCooldown = false;
 
+    private readonly NetworkVariable<double> cooldownEndServerTime = new NetworkVariable<double>(
+        0.0,
+        NetworkVariableReadPermission.Everyone,
+        NetworkVariableWritePermission.Server
+    );
+
     [Header("Input Settings")]
     public KeyCode assignedKey = KeyCode.Q;
 
@@ -38,6 +44,7 @@ public class AbilitySteal : NetworkBehaviour, IAbilityCooldown
     {
         base.OnNetworkSpawn();
         SyncUpgradeLevelFromHolder();
+        Debug.Log($"[Steal] OnNetworkSpawn | IsServer={IsServer}, IsClient={IsClient}, IsOwner={IsOwner}, OwnerClientId={OwnerClientId}, Lv={abilityLevel}");
     }
 
     public void SyncUpgradeLevelFromHolder()
@@ -75,6 +82,16 @@ public class AbilitySteal : NetworkBehaviour, IAbilityCooldown
 
     public float GetRemainingCooldown()
     {
+        if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
+        {
+            double nowServerTime = NetworkManager.Singleton.ServerTime.Time;
+            float remainingNet = (float)(cooldownEndServerTime.Value - nowServerTime);
+            if (remainingNet > 0f)
+            {
+                return remainingNet;
+            }
+        }
+
         if (IsServer)
         {
             float remainingServer = (lastUseTime + cooldownTime) - Time.time;
@@ -92,7 +109,7 @@ public class AbilitySteal : NetworkBehaviour, IAbilityCooldown
 
     void Update()
     {
-        if (!IsOwner) return;
+        if (!IsOwner || !IsSpawned) return;
 
         bool isOnCooldown = GetRemainingCooldown() > 0f;
 
@@ -104,6 +121,8 @@ public class AbilitySteal : NetworkBehaviour, IAbilityCooldown
 
         if (Input.GetKeyDown(assignedKey))
         {
+            Debug.Log($"[Steal] Input {assignedKey} ditekan oleh OwnerClientId={OwnerClientId} | isOnCooldown={isOnCooldown}");
+
             if (AbilityJammer.IsPlayerJammed(this, "Steal"))
             {
                 return;
@@ -111,7 +130,7 @@ public class AbilitySteal : NetworkBehaviour, IAbilityCooldown
 
             if (isOnCooldown)
             {
-                Debug.Log("Ability Steal masih cooldown!");
+                Debug.Log($"Ability Steal masih cooldown! Sisa: {GetRemainingCooldown():0.0}s");
                 return;
             }
 
@@ -122,12 +141,23 @@ public class AbilitySteal : NetworkBehaviour, IAbilityCooldown
     [ServerRpc]
     private void TryUseStealServerRpc()
     {
+        if (!IsSpawned) return;
+
+        Debug.Log($"[Steal] TryUseStealServerRpc diterima di Server untuk OwnerClientId={OwnerClientId}");
+
         if (AbilityJammer.IsPlayerJammed(this, "Steal"))
         {
             return;
         }
 
-        if (Time.time < lastUseTime + cooldownTime)
+        if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
+        {
+            if (NetworkManager.Singleton.ServerTime.Time < cooldownEndServerTime.Value)
+            {
+                return;
+            }
+        }
+        else if (Time.time < lastUseTime + cooldownTime)
         {
             return;
         }
@@ -172,6 +202,12 @@ public class AbilitySteal : NetworkBehaviour, IAbilityCooldown
         if (success)
         {
             lastUseTime = Time.time;
+
+            if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
+            {
+                cooldownEndServerTime.Value = NetworkManager.Singleton.ServerTime.Time + cooldownTime;
+            }
+
             TriggerCooldownClientRpc(cooldownTime);
         }
         else

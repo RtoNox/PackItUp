@@ -12,9 +12,19 @@ public class AbilityWarp : NetworkBehaviour, IAbilityCooldown
     public float cooldownTime = 45f;
     public float selectionTimeLimit = 3f;
 
+    [Header("Upgrade Settings (Max Lv 3)")]
+    [Range(1, 3)] public int abilityLevel = 1;
+    public int maxAbilityLevel = 3;
+
     private float lastUseTime = -999f;
     private float clientCooldownEndTime = -1f;
     private bool wasOnCooldown = false;
+
+    private readonly NetworkVariable<double> cooldownEndServerTime = new NetworkVariable<double>(
+        0.0,
+        NetworkVariableReadPermission.Everyone,
+        NetworkVariableWritePermission.Server
+    );
 
     [Header("Input Settings")]
     public KeyCode assignedKey = KeyCode.E;
@@ -24,18 +34,42 @@ public class AbilityWarp : NetworkBehaviour, IAbilityCooldown
     public float mazeMaxX = 50f;
     public float mazeMinZ = -50f;
     public float mazeMaxZ = 50f;
+    public float maxWarpClamp = 45f;
 
     private GameObject mapPanelInstance;
     private bool isSelectingLocation = false;
     private float selectionTimer = 0f;
+    private bool uiInitialized = false;
 
     public string AbilityName => abilityName;
     public Sprite AbilityIcon => abilityIcon;
     public float CooldownDuration => cooldownTime;
     public KeyCode AssignedKey => assignedKey;
 
+    public override void OnNetworkSpawn()
+    {
+        base.OnNetworkSpawn();
+        abilityLevel = Mathf.Clamp(AbilityDataHolder.GetLevel(abilityName), 1, maxAbilityLevel);
+
+        if (IsOwner && !uiInitialized)
+        {
+            uiInitialized = true;
+            StartCoroutine(SetupWarpUIAsync());
+        }
+    }
+
     public float GetRemainingCooldown()
     {
+        if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
+        {
+            double nowServerTime = NetworkManager.Singleton.ServerTime.Time;
+            float remainingNet = (float)(cooldownEndServerTime.Value - nowServerTime);
+            if (remainingNet > 0f)
+            {
+                return remainingNet;
+            }
+        }
+
         if (IsServer)
         {
             float remainingServer = (lastUseTime + cooldownTime) - Time.time;
@@ -49,12 +83,6 @@ public class AbilityWarp : NetworkBehaviour, IAbilityCooldown
         }
 
         return 0f;
-    }
-
-    void Start()
-    {
-        if (!IsOwner) return;
-        StartCoroutine(SetupWarpUIAsync());
     }
 
     private IEnumerator SetupWarpUIAsync()
@@ -99,7 +127,7 @@ public class AbilityWarp : NetworkBehaviour, IAbilityCooldown
 
     void Update()
     {
-        if (!IsOwner) return;
+        if (!IsOwner || !IsSpawned) return;
 
         bool isOnCooldown = GetRemainingCooldown() > 0f;
 
@@ -111,6 +139,11 @@ public class AbilityWarp : NetworkBehaviour, IAbilityCooldown
 
         if (Input.GetKeyDown(assignedKey))
         {
+            if (AbilityJammer.IsPlayerJammed(this, "Warp"))
+            {
+                return;
+            }
+
             if (isOnCooldown)
             {
                 Debug.Log("[Warp] Skill masih cooldown!");
@@ -126,6 +159,11 @@ public class AbilityWarp : NetworkBehaviour, IAbilityCooldown
 
     private IEnumerator OpenMapSelectionRoutine()
     {
+        if (mapPanelInstance == null)
+        {
+            yield return StartCoroutine(SetupWarpUIAsync());
+        }
+
         isSelectingLocation = true;
         selectionTimer = selectionTimeLimit;
 
@@ -137,13 +175,13 @@ public class AbilityWarp : NetworkBehaviour, IAbilityCooldown
         Vector3 selectedTargetPosition = Vector3.zero;
         bool hasChosenPosition = false;
 
-        RectTransform mapRect = mapPanelInstance.GetComponent<RectTransform>();
+        RectTransform mapRect = mapPanelInstance != null ? mapPanelInstance.GetComponent<RectTransform>() : null;
 
         while (selectionTimer > 0f)
         {
             selectionTimer -= Time.deltaTime;
 
-            if (Input.GetMouseButtonDown(0))
+            if (Input.GetMouseButtonDown(0) && mapRect != null)
             {
                 Vector2 localMousePos;
                 if (RectTransformUtility.ScreenPointToLocalPointInRectangle(mapRect, Input.mousePosition, null, out localMousePos))
@@ -181,21 +219,41 @@ public class AbilityWarp : NetworkBehaviour, IAbilityCooldown
         }
         else
         {
-            lastUseTime = Time.time;
-            clientCooldownEndTime = Time.time + cooldownTime;
-            wasOnCooldown = true;
+            SetCooldownLocalAndServer(cooldownTime);
             Debug.Log("[Warp] Gagal memilih tempat dalam 3 detik! Skill dibatalkan dan masuk cooldown.");
         }
 
         isSelectingLocation = false;
     }
 
+    private void SetCooldownLocalAndServer(float duration)
+    {
+        clientCooldownEndTime = Time.time + duration;
+        wasOnCooldown = true;
+
+        if (IsServer)
+        {
+            lastUseTime = Time.time;
+            if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
+            {
+                cooldownEndServerTime.Value = NetworkManager.Singleton.ServerTime.Time + duration;
+            }
+            TriggerCooldownClientRpc(duration);
+        }
+    }
+
     [ServerRpc]
     private void TryWarpServerRpc(Vector3 targetPosition)
     {
-        float maxBoundary = 45f;
-        targetPosition.x = Mathf.Clamp(targetPosition.x, -maxBoundary, maxBoundary);
-        targetPosition.z = Mathf.Clamp(targetPosition.z, -maxBoundary, maxBoundary);
+        if (!IsSpawned) return;
+
+        if (AbilityJammer.IsPlayerJammed(this, "Warp"))
+        {
+            return;
+        }
+
+        targetPosition.x = Mathf.Clamp(targetPosition.x, -maxWarpClamp, maxWarpClamp);
+        targetPosition.z = Mathf.Clamp(targetPosition.z, -maxWarpClamp, maxWarpClamp);
 
         Vector3 rayOrigin = new Vector3(targetPosition.x, 20f, targetPosition.z);
         if (Physics.Raycast(rayOrigin, Vector3.down, out RaycastHit groundHit, 40f))
@@ -208,16 +266,27 @@ public class AbilityWarp : NetworkBehaviour, IAbilityCooldown
             return;
         }
 
+        ApplyWarpPositionClientRpc(targetPosition);
+
+        lastUseTime = Time.time;
+        if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
+        {
+            cooldownEndServerTime.Value = NetworkManager.Singleton.ServerTime.Time + cooldownTime;
+        }
+
+        TriggerCooldownClientRpc(cooldownTime);
+        Debug.Log($"[Warp Lv.{abilityLevel}] Berhasil warp ke koordinat aman: {targetPosition}");
+    }
+
+    [ClientRpc]
+    private void ApplyWarpPositionClientRpc(Vector3 finalPosition)
+    {
         CharacterController charController = GetComponent<CharacterController>();
         if (charController != null) charController.enabled = false;
 
-        transform.position = targetPosition;
+        transform.position = finalPosition;
 
         if (charController != null) charController.enabled = true;
-
-        lastUseTime = Time.time;
-        TriggerCooldownClientRpc(cooldownTime);
-        Debug.Log($"[Warp] Berhasil warp ke koordinat aman: {targetPosition}");
     }
 
     [ClientRpc]

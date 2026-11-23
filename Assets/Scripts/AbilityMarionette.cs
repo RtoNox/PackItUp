@@ -23,6 +23,12 @@ public class AbilityMarionette : NetworkBehaviour, IAbilityCooldown
     private Coroutine activeMarionetteRoutine;
     private PlayerPoints activeTargetPoints;
 
+    private readonly NetworkVariable<double> cooldownEndServerTime = new NetworkVariable<double>(
+        0.0,
+        NetworkVariableReadPermission.Everyone,
+        NetworkVariableWritePermission.Server
+    );
+
     [Header("Line of Sight Settings")]
     public LayerMask obstacleLayer;
 
@@ -53,6 +59,7 @@ public class AbilityMarionette : NetworkBehaviour, IAbilityCooldown
         base.OnNetworkSpawn();
         int savedLevel = AbilityDataHolder.GetLevel(abilityName);
         SetUpgradeLevel(savedLevel);
+        Debug.Log($"[Marionette] OnNetworkSpawn | IsServer={IsServer}, IsClient={IsClient}, IsOwner={IsOwner}, OwnerClientId={OwnerClientId}, Lv={abilityLevel}");
     }
 
     public override void OnNetworkDespawn()
@@ -83,6 +90,16 @@ public class AbilityMarionette : NetworkBehaviour, IAbilityCooldown
 
     public float GetRemainingCooldown()
     {
+        if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
+        {
+            double nowServerTime = NetworkManager.Singleton.ServerTime.Time;
+            float remainingNet = (float)(cooldownEndServerTime.Value - nowServerTime);
+            if (remainingNet > 0f)
+            {
+                return remainingNet;
+            }
+        }
+
         if (IsServer)
         {
             float remainingServer = (lastUseTime + cooldownTime) - Time.time;
@@ -100,7 +117,7 @@ public class AbilityMarionette : NetworkBehaviour, IAbilityCooldown
 
     void Update()
     {
-        if (!IsOwner) return;
+        if (!IsOwner || !IsSpawned) return;
 
         bool isOnCooldown = GetRemainingCooldown() > 0f;
 
@@ -112,6 +129,8 @@ public class AbilityMarionette : NetworkBehaviour, IAbilityCooldown
 
         if (Input.GetKeyDown(assignedKey))
         {
+            Debug.Log($"[Marionette] Input {assignedKey} ditekan oleh OwnerClientId={OwnerClientId} | isOnCooldown={isOnCooldown}");
+
             if (AbilityJammer.IsPlayerJammed(this, "Marionette"))
             {
                 return;
@@ -119,7 +138,7 @@ public class AbilityMarionette : NetworkBehaviour, IAbilityCooldown
 
             if (isOnCooldown)
             {
-                Debug.Log("[Marionette] Skill masih cooldown!");
+                Debug.Log($"[Marionette] Skill masih cooldown! Sisa: {GetRemainingCooldown():0.0}s");
                 return;
             }
 
@@ -137,6 +156,8 @@ public class AbilityMarionette : NetworkBehaviour, IAbilityCooldown
 
     public void OnTargetSelected(ulong targetNetworkObjectId)
     {
+        if (!IsOwner || !IsSpawned) return;
+
         if (AbilityJammer.IsPlayerJammed(this, "Marionette"))
         {
             return;
@@ -148,12 +169,22 @@ public class AbilityMarionette : NetworkBehaviour, IAbilityCooldown
     [ServerRpc]
     private void TryUseMarionetteServerRpc(ulong targetNetworkObjectId)
     {
+        if (!IsSpawned) return;
+
         if (AbilityJammer.IsPlayerJammed(this, "Marionette"))
         {
             return;
         }
 
-        if (Time.time < lastUseTime + cooldownTime) return;
+        if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
+        {
+            if (NetworkManager.Singleton.ServerTime.Time < cooldownEndServerTime.Value)
+                return;
+        }
+        else if (Time.time < lastUseTime + cooldownTime)
+        {
+            return;
+        }
 
         NetworkObject targetNetObj = null;
 
@@ -169,6 +200,11 @@ public class AbilityMarionette : NetworkBehaviour, IAbilityCooldown
         if (targetNetObj != null && targetNetObj.gameObject != gameObject)
         {
             lastUseTime = Time.time;
+            if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
+            {
+                cooldownEndServerTime.Value = NetworkManager.Singleton.ServerTime.Time + cooldownTime;
+            }
+
             TriggerCooldownClientRpc(cooldownTime);
 
             if (activeMarionetteRoutine != null)

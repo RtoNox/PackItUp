@@ -23,9 +23,14 @@ public class AbilityCooldownSlotUI : MonoBehaviour
     public Color readyColor = Color.white;
     public Color cooldownColor = new Color(1f, 0.85f, 0.2f, 1f);
 
+    [Header("Debug")]
+    public bool enableDebugLogs = true;
+
     private IAbilityCooldown boundAbility;
+    private NetworkBehaviour boundNetBehaviour;
     private bool isBound = false;
     private float rebindTimer = 0f;
+    private bool loggedWaitingForOwner = false;
 
     private void Awake()
     {
@@ -43,8 +48,12 @@ public class AbilityCooldownSlotUI : MonoBehaviour
 
     private void Update()
     {
-        if (!isBound || boundAbility == null)
+        if (!isBound || boundAbility == null || (boundNetBehaviour != null && (!boundNetBehaviour.IsSpawned || !boundNetBehaviour.IsOwner)))
         {
+            isBound = false;
+            boundAbility = null;
+            boundNetBehaviour = null;
+
             rebindTimer -= Time.deltaTime;
             if (rebindTimer <= 0f)
             {
@@ -102,16 +111,29 @@ public class AbilityCooldownSlotUI : MonoBehaviour
     private void TryBindLocalPlayerAbility()
     {
         boundAbility = null;
+        boundNetBehaviour = null;
         isBound = false;
 
         if (NetworkManager.Singleton == null || NetworkManager.Singleton.SpawnManager == null)
+        {
+            if (enableDebugLogs && !loggedWaitingForOwner)
+            {
+                Debug.LogWarning($"[CooldownUI:{name}] NetworkManager / SpawnManager belum siap.");
+                loggedWaitingForOwner = true;
+            }
             return;
+        }
+
+        bool foundOwnedPlayer = false;
 
         foreach (var kvp in NetworkManager.Singleton.SpawnManager.SpawnedObjects)
         {
             NetworkObject netObj = kvp.Value;
-            if (netObj == null || !netObj.IsOwner) continue;
+            if (netObj == null || !netObj.IsSpawned || !netObj.IsOwner) continue;
             if (!netObj.CompareTag("Player")) continue;
+
+            foundOwnedPlayer = true;
+            loggedWaitingForOwner = false;
 
             MonoBehaviour[] monos = netObj.GetComponents<MonoBehaviour>();
             int foundIndex = 0;
@@ -126,11 +148,17 @@ public class AbilityCooldownSlotUI : MonoBehaviour
                     if (matchedByKey || matchedByIndex)
                     {
                         boundAbility = abilityCooldown;
+                        boundNetBehaviour = mono as NetworkBehaviour;
                         isBound = true;
 
                         if (abilityIconImage != null && abilityCooldown.AbilityIcon != null)
                         {
                             abilityIconImage.sprite = abilityCooldown.AbilityIcon;
+                        }
+
+                        if (enableDebugLogs)
+                        {
+                            Debug.Log($"[CooldownUI:{name}] Bound ke '{abilityCooldown.AbilityName}' (Key: {abilityCooldown.AssignedKey}) pada Player OwnerClientId={netObj.OwnerClientId}.");
                         }
                         return;
                     }
@@ -138,6 +166,12 @@ public class AbilityCooldownSlotUI : MonoBehaviour
                     foundIndex++;
                 }
             }
+        }
+
+        if (enableDebugLogs && !foundOwnedPlayer && !loggedWaitingForOwner)
+        {
+            Debug.LogWarning($"[CooldownUI:{name}] Belum menemukan Spawned Player dengan IsOwner=true.");
+            loggedWaitingForOwner = true;
         }
     }
 }

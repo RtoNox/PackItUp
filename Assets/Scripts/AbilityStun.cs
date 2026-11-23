@@ -24,12 +24,23 @@ public class AbilityStun : NetworkBehaviour, IAbilityCooldown
     public GameObject bodyLightningPrefab; // Tarik prefab 'Lighting_Stun' ke sini
 
     private int currentStacks = 1;
-    private readonly List<float> activeCooldownEndTimes = new List<float>();
+    private readonly List<double> activeCooldownEndServerTimes = new List<double>();
+    private readonly List<Coroutine> rechargeCoroutines = new List<Coroutine>();
+    private readonly List<Coroutine> activeStunCoroutines = new List<Coroutine>();
 
     public string AbilityName => abilityName;
     public Sprite AbilityIcon => abilityIcon;
     public float CooldownDuration => cooldownTime;
     public KeyCode AssignedKey => assignedKey;
+
+    private double GetCurrentTime()
+    {
+        if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
+        {
+            return NetworkManager.Singleton.ServerTime.Time;
+        }
+        return Time.time;
+    }
 
     public int GetMaxStacks()
     {
@@ -61,36 +72,60 @@ public class AbilityStun : NetworkBehaviour, IAbilityCooldown
         base.OnNetworkSpawn();
         int savedLevel = AbilityDataHolder.GetLevel(abilityName);
         SetUpgradeLevel(savedLevel, true);
+    }
 
-        if (IsOwner)
+    public override void OnNetworkDespawn()
+    {
+        CleanupStunCoroutines();
+        base.OnNetworkDespawn();
+    }
+
+    private void OnDestroy()
+    {
+        CleanupStunCoroutines();
+    }
+
+    private void CleanupStunCoroutines()
+    {
+        foreach (var routine in rechargeCoroutines)
         {
-            SyncStackAndCooldownClientRpc(currentStacks, 0f);
+            if (routine != null) StopCoroutine(routine);
         }
+        rechargeCoroutines.Clear();
+
+        foreach (var routine in activeStunCoroutines)
+        {
+            if (routine != null) StopCoroutine(routine);
+        }
+        activeStunCoroutines.Clear();
     }
 
     public float GetRemainingCooldown()
     {
-        activeCooldownEndTimes.RemoveAll(endTime => Time.time >= endTime);
-        if (activeCooldownEndTimes.Count == 0) return 0f;
+        double now = GetCurrentTime();
+        activeCooldownEndServerTimes.RemoveAll(endTime => now >= endTime);
 
-        float earliestEnd = float.MaxValue;
-        for (int i = 0; i < activeCooldownEndTimes.Count; i++)
+        if (activeCooldownEndServerTimes.Count == 0) return 0f;
+
+        double earliestEnd = double.MaxValue;
+        for (int i = 0; i < activeCooldownEndServerTimes.Count; i++)
         {
-            if (activeCooldownEndTimes[i] < earliestEnd)
+            if (activeCooldownEndServerTimes[i] < earliestEnd)
             {
-                earliestEnd = activeCooldownEndTimes[i];
+                earliestEnd = activeCooldownEndServerTimes[i];
             }
         }
 
-        float remaining = earliestEnd - Time.time;
+        float remaining = (float)(earliestEnd - now);
         return remaining > 0f ? remaining : 0f;
     }
 
     void Update()
     {
-        if (!IsOwner) return;
+        if (!IsOwner || !IsSpawned) return;
 
-        activeCooldownEndTimes.RemoveAll(endTime => Time.time >= endTime);
+        double now = GetCurrentTime();
+        activeCooldownEndServerTimes.RemoveAll(endTime => now >= endTime);
 
         if (Input.GetKeyDown(assignedKey))
         {
@@ -112,6 +147,8 @@ public class AbilityStun : NetworkBehaviour, IAbilityCooldown
     [ServerRpc]
     private void TryUseStunServerRpc()
     {
+        if (!IsSpawned) return;
+
         if (AbilityJammer.IsPlayerJammed(this, "Stun"))
         {
             return;
@@ -146,14 +183,17 @@ public class AbilityStun : NetworkBehaviour, IAbilityCooldown
             {
                 currentStacks = Mathf.Max(0, currentStacks - 1);
 
+                double cooldownEndTime = GetCurrentTime() + cooldownTime;
+
                 // Jalankan cooldown 30s khusus untuk 1 stack yang baru terpakai
-                StartCoroutine(RechargeOneStackRoutine(cooldownTime));
+                Coroutine rechargeRoutine = StartCoroutine(RechargeOneStackRoutine(cooldownTime));
+                rechargeCoroutines.Add(rechargeRoutine);
 
                 // Terapkan stun ke target di semua client
                 ApplyStunClientRpc(targetNetObj.NetworkObjectId, stunDuration);
 
-                // Sinkronkan jumlah stack & waktu cooldown stack terpakai ke owner
-                SyncStackAndCooldownClientRpc(currentStacks, cooldownTime);
+                // Sinkronkan jumlah stack & waktu selesai cooldown stack terpakai ke owner
+                SyncStackAndCooldownClientRpc(currentStacks, cooldownEndTime);
 
                 Debug.Log($"[Stun Lv.{abilityLevel}] Berhasil men-stun {targetPlayer.name} selama {stunDuration}s! Sisa stack: {currentStacks}/{GetMaxStacks()}");
                 return;
@@ -173,28 +213,31 @@ public class AbilityStun : NetworkBehaviour, IAbilityCooldown
             currentStacks++;
         }
 
-        SyncStackAndCooldownClientRpc(currentStacks, 0f);
+        SyncStackAndCooldownClientRpc(currentStacks, -1.0);
     }
 
     [ClientRpc]
     private void ApplyStunClientRpc(ulong targetNetworkObjectId, float duration)
     {
-        if (NetworkManager.Singleton.SpawnManager.SpawnedObjects.TryGetValue(targetNetworkObjectId, out NetworkObject targetNetObj))
+        if (NetworkManager.Singleton != null &&
+            NetworkManager.Singleton.SpawnManager != null &&
+            NetworkManager.Singleton.SpawnManager.SpawnedObjects.TryGetValue(targetNetworkObjectId, out NetworkObject targetNetObj))
         {
-            StartCoroutine(StunRoutine(targetNetObj.gameObject, duration));
+            Coroutine stunRoutine = StartCoroutine(StunRoutine(targetNetObj.gameObject, duration));
+            activeStunCoroutines.Add(stunRoutine);
         }
     }
 
     [ClientRpc]
-    private void SyncStackAndCooldownClientRpc(int newStacks, float addedCooldownDuration)
+    private void SyncStackAndCooldownClientRpc(int newStacks, double addedCooldownEndServerTime)
     {
         if (!IsOwner) return;
 
         currentStacks = newStacks;
 
-        if (addedCooldownDuration > 0f)
+        if (addedCooldownEndServerTime > 0.0)
         {
-            activeCooldownEndTimes.Add(Time.time + addedCooldownDuration);
+            activeCooldownEndServerTimes.Add(addedCooldownEndServerTime);
         }
     }
 

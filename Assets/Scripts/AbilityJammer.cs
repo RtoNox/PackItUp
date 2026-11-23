@@ -24,6 +24,12 @@ public class AbilityJammer : NetworkBehaviour, IAbilityCooldown
     private float clientCooldownEndTime = -1f;
     private bool wasOnCooldown = false;
 
+    private readonly NetworkVariable<double> cooldownEndServerTime = new NetworkVariable<double>(
+        0.0,
+        NetworkVariableReadPermission.Everyone,
+        NetworkVariableWritePermission.Server
+    );
+
     [Header("Visual Indicator & VFX")]
     public GameObject indicatorXObject;
     public GameObject jammerVfxPrefab;
@@ -43,6 +49,15 @@ public class AbilityJammer : NetworkBehaviour, IAbilityCooldown
     public float CooldownDuration => cooldownTime;
     public KeyCode AssignedKey => assignedKey;
 
+    private double GetCurrentTime()
+    {
+        if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
+        {
+            return NetworkManager.Singleton.ServerTime.Time;
+        }
+        return Time.time;
+    }
+
     public float GetJammerDuration()
     {
         int clampedLevel = Mathf.Clamp(abilityLevel, 1, maxAbilityLevel);
@@ -59,6 +74,7 @@ public class AbilityJammer : NetworkBehaviour, IAbilityCooldown
         base.OnNetworkSpawn();
         int savedLevel = AbilityDataHolder.GetLevel(abilityName);
         SetUpgradeLevel(savedLevel);
+        Debug.Log($"[Jammer] OnNetworkSpawn | IsServer={IsServer}, IsClient={IsClient}, IsOwner={IsOwner}, OwnerClientId={OwnerClientId}, Lv={abilityLevel}");
     }
 
     // Dipanggil dari script ability lain untuk cek apakah player ini sedang di-jam
@@ -77,6 +93,16 @@ public class AbilityJammer : NetworkBehaviour, IAbilityCooldown
 
     public float GetRemainingCooldown()
     {
+        if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
+        {
+            double nowServerTime = NetworkManager.Singleton.ServerTime.Time;
+            float remainingNet = (float)(cooldownEndServerTime.Value - nowServerTime);
+            if (remainingNet > 0f)
+            {
+                return remainingNet;
+            }
+        }
+
         if (IsServer)
         {
             float remainingServer = (lastUseTime + cooldownTime) - Time.time;
@@ -126,7 +152,7 @@ public class AbilityJammer : NetworkBehaviour, IAbilityCooldown
             spawnedVfx = null;
         }
 
-        if (IsServer)
+        if (IsServer && IsSpawned)
         {
             SyncJammedPlayersClientRpc(currentAffectedIds.ToArray(), false);
             currentAffectedIds.Clear();
@@ -146,6 +172,8 @@ public class AbilityJammer : NetworkBehaviour, IAbilityCooldown
 
         if (Input.GetKeyDown(assignedKey))
         {
+            Debug.Log($"[Jammer] Input {assignedKey} ditekan oleh OwnerClientId={OwnerClientId} | isOnCooldown={isOnCooldown}");
+
             if (AbilityJammer.IsPlayerJammed(this, "Jammer")) return;
 
             if (isOnCooldown)
@@ -162,9 +190,24 @@ public class AbilityJammer : NetworkBehaviour, IAbilityCooldown
     private void TryUseJammerServerRpc()
     {
         if (!IsSpawned) return;
-        if (Time.time < lastUseTime + cooldownTime) return;
+        if (AbilityJammer.IsPlayerJammed(this, "Jammer")) return;
+
+        if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
+        {
+            if (NetworkManager.Singleton.ServerTime.Time < cooldownEndServerTime.Value)
+                return;
+        }
+        else if (Time.time < lastUseTime + cooldownTime)
+        {
+            return;
+        }
 
         lastUseTime = Time.time;
+        if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
+        {
+            cooldownEndServerTime.Value = NetworkManager.Singleton.ServerTime.Time + cooldownTime;
+        }
+
         TriggerCooldownClientRpc(cooldownTime);
 
         if (activeJammerCoroutine != null)
