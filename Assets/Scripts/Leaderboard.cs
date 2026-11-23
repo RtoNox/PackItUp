@@ -5,6 +5,7 @@ public class Leaderboard : MonoBehaviour
 {
     [SerializeField] private TextMeshProUGUI entryText;
     [SerializeField] private TextMeshProUGUI rewardText;
+    [SerializeField] private TextMeshProUGUI xpText;
 
     private void OnEnable()
     {
@@ -22,6 +23,7 @@ public class Leaderboard : MonoBehaviour
     private void ShowReward(int amount)
     {
         rewardText.text = $"+{amount} Its";
+        xpText.text = $"+{amount * 2} XP";
     }
 
     public void SetData(PlayerResult result)
