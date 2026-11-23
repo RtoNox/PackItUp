@@ -828,7 +828,7 @@ Rigidbody:
     m_Bits: 0
   m_ImplicitCom: 1
   m_ImplicitTensor: 1
-  m_UseGravity: 1
+  m_UseGravity: 0
   m_IsKinematic: 1
   m_Interpolate: 0
   m_Constraints: 64
@@ -845,7 +845,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 641691081
+  GlobalObjectIdHash: 3541218597
   InScenePlacedSourceGlobalObjectIdHash: 3541218597
   m_InScenePlacedDisabledByDefault: 0
   DeferredDespawnTick: 0
@@ -931,11 +931,11 @@ MonoBehaviour:
   RotationMaxInterpolationTime: 0.1
   ScaleLerpSmoothing: 1
   ScaleMaxInterpolationTime: 0.1
-  AuthorityMode: 0
+  AuthorityMode: 1
   TickSyncChildren: 0
   UseUnreliableDeltas: 0
   SyncPositionX: 1
-  SyncPositionY: 0
+  SyncPositionY: 1
   SyncPositionZ: 1
   SyncRotAngleX: 0
   SyncRotAngleY: 1
@@ -1189,7 +1189,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PlayerCharacterVisual
   ShowTopMostFoldoutHeaderGroup: 1
   modelHolder: {fileID: 7223618408235182748}
-  fallbackCharacter: {fileID: 0}
+  fallbackCharacter: {fileID: 11400000, guid: 2d949fad3bc1fd14da3efce663955efd, type: 2}
 --- !u!114 &5186273247328439447
 MonoBehaviour:
   m_ObjectHideFlags: 0

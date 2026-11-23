@@ -62,6 +62,13 @@ public class PlayerMovement : NetworkBehaviour
         Debug.Log("PlayerMovement initialized for the local player.");
     }
 
+    // Only addition: resets movement flags when disabled in RoomScene
+    private void OnDisable()
+    {
+        IsMoving = false;
+        isSprinting = false;
+    }
+
     private void Update()
     {
         if (!IsOwner || controller == null)

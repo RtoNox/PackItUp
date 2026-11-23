@@ -140,6 +140,15 @@ public class PlayerCharacterVisual : NetworkBehaviour
         BindAnimator(currentModelInstance);
     }
 
+    private void LateUpdate()
+    {
+        if (currentModelInstance != null)
+        {
+            currentModelInstance.transform.localPosition = Vector3.zero;
+            currentModelInstance.transform.localRotation = Quaternion.identity;
+        }
+    }
+
     private void BindAnimator(GameObject spawnedModel)
     {
         PlayerAnimation playerAnim = GetComponentInChildren<PlayerAnimation>();

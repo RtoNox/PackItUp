@@ -57,8 +57,6 @@ public class PlayerSpawnManager : NetworkBehaviour
 
         GameObject player = Instantiate(playerPrefab, spawnPoint.position, spawnPoint.rotation);
 
-        // If the prefab has a CharacterController, briefly disable it so Unity's physics
-        // cache doesn't snap the character back to (0, 0, 0) on the first frame.
         if (player.TryGetComponent<CharacterController>(out var cc))
             cc.enabled = false;
 
@@ -67,14 +65,41 @@ public class PlayerSpawnManager : NetworkBehaviour
         NetworkObject netObj = player.GetComponent<NetworkObject>();
         netObj.SpawnAsPlayerObject(clientId, destroyWithScene: true);
 
-        // Force NetworkTransform to snap immediately instead of starting at (0, 0, 0)
-        if (player.TryGetComponent<NetworkTransform>(out var netTransform))
-            netTransform.Teleport(spawnPoint.position, spawnPoint.rotation, player.transform.localScale);
-
         if (cc != null)
             cc.enabled = true;
 
+        // Send exact spawn position & rotation to the owning Client so ClientNetworkTransform
+        // does not reset to (0, 0, 0) in Map1 or face the wrong way in RoomScene
+        ClientRpcParams targetClient = new ClientRpcParams
+        {
+            Send = new ClientRpcSendParams
+            {
+                TargetClientIds = new[] { clientId }
+            }
+        };
+        SetSpawnTransformClientRpc(netObj, spawnPoint.position, spawnPoint.rotation, targetClient);
+
         spawnedClients.Add(clientId);
         Debug.Log($"[PlayerSpawnManager] Spawned client {clientId} at {spawnPoint.name} ({spawnPoint.position})");
+    }
+
+    [ClientRpc]
+    private void SetSpawnTransformClientRpc(NetworkObjectReference playerRef, Vector3 position, Quaternion rotation, ClientRpcParams clientRpcParams = default)
+    {
+        if (!playerRef.TryGet(out NetworkObject playerNetObj))
+            return;
+
+        GameObject player = playerNetObj.gameObject;
+
+        if (player.TryGetComponent<CharacterController>(out var cc))
+            cc.enabled = false;
+
+        player.transform.SetPositionAndRotation(position, rotation);
+
+        if (player.TryGetComponent<NetworkTransform>(out var netTransform))
+            netTransform.Teleport(position, rotation, player.transform.localScale);
+
+        if (cc != null)
+            cc.enabled = true;
     }
 }
