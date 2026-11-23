@@ -43,6 +43,8 @@ public class GachaManager : MonoBehaviour
     [SerializeField] private TMP_Text resultText;
     [SerializeField] private Image resultIcon;
 
+    [SerializeField] private CurrencyType currency;
+
     private void Start()
     {
         if (resultPanel != null)
@@ -74,52 +76,68 @@ public class GachaManager : MonoBehaviour
 
     public void PullOnce()
     {
-        GachaPullResult? result = RollSingleCharacter();
-        if (!result.HasValue) return;
-
-        GachaPullResult pull = result.Value;
-
-        if (resultPanel != null)
-            resultPanel.SetActive(true);
-
-        if (resultText != null)
-            resultText.text = FormatPullResultLine(pull);
-
-        if (resultIcon != null)
+        int currentBalance = CurrencyManager.Instance.GetBalance(currency);
+        if (currentBalance >= 100)
         {
-            bool hasIcon = pull.character.icon != null;
-            resultIcon.gameObject.SetActive(hasIcon);
-            if (hasIcon) resultIcon.sprite = pull.character.icon;
+            GachaPullResult? result = RollSingleCharacter();
+            if (!result.HasValue) return;
+
+            GachaPullResult pull = result.Value;
+
+            if (resultPanel != null)
+                resultPanel.SetActive(true);
+
+            if (resultText != null)
+                resultText.text = FormatPullResultLine(pull);
+
+            if (resultIcon != null)
+            {
+                bool hasIcon = pull.character.icon != null;
+                resultIcon.gameObject.SetActive(hasIcon);
+                if (hasIcon) resultIcon.sprite = pull.character.icon;
+            }
+        }
+        else
+        {
+            return;
         }
     }
 
     public void PullTen()
     {
-        List<GachaPullResult> results = new List<GachaPullResult>();
-
-        for (int i = 0; i < 10; i++)
+        int currentBalance = CurrencyManager.Instance.GetBalance(currency);
+        if (currentBalance >= 1000)
         {
-            GachaPullResult? result = RollSingleCharacter();
-            if (result.HasValue)
-                results.Add(result.Value);
-        }
+            List<GachaPullResult> results = new List<GachaPullResult>();
 
-        if (results.Count == 0) return;
-
-        if (resultPanel != null)
-            resultPanel.SetActive(true);
-
-        if (resultIcon != null)
-            resultIcon.gameObject.SetActive(false);
-
-        if (resultText != null)
-        {
-            string summary = "";
-            foreach (GachaPullResult pull in results)
+            for (int i = 0; i < 10; i++)
             {
-                summary += FormatPullResultLine(pull) + "\n";
+                GachaPullResult? result = RollSingleCharacter();
+                if (result.HasValue)
+                    results.Add(result.Value);
             }
-            resultText.text = summary;
+
+            if (results.Count == 0) return;
+
+            if (resultPanel != null)
+                resultPanel.SetActive(true);
+
+            if (resultIcon != null)
+                resultIcon.gameObject.SetActive(false);
+
+            if (resultText != null)
+            {
+                string summary = "";
+                foreach (GachaPullResult pull in results)
+                {
+                    summary += FormatPullResultLine(pull) + "\n";
+                }
+                resultText.text = summary;
+            }
+        }
+        else
+        {
+            return;
         }
     }
 
