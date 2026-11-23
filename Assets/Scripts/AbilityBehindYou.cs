@@ -9,10 +9,21 @@ public class AbilityBehindYou : NetworkBehaviour, IAbilityCooldown
     public string abilityName = "Behind You";
     public Sprite abilityIcon;
     public float cooldownTime = 40f;
+    public float behindDistance = 1.5f;
+
+    [Header("Upgrade Settings (Max Lv 3)")]
+    [Range(1, 3)] public int abilityLevel = 1;
+    public int maxAbilityLevel = 3;
 
     private float lastUseTime = -999f;
     private float clientCooldownEndTime = -1f;
     private bool wasOnCooldown = false;
+
+    private readonly NetworkVariable<double> cooldownEndServerTime = new NetworkVariable<double>(
+        0.0,
+        NetworkVariableReadPermission.Everyone,
+        NetworkVariableWritePermission.Server
+    );
 
     [Header("Input Settings")]
     public KeyCode assignedKey = KeyCode.E;
@@ -22,8 +33,29 @@ public class AbilityBehindYou : NetworkBehaviour, IAbilityCooldown
     public float CooldownDuration => cooldownTime;
     public KeyCode AssignedKey => assignedKey;
 
+    public void SetUpgradeLevel(int newLevel)
+    {
+        abilityLevel = Mathf.Clamp(newLevel, 1, maxAbilityLevel);
+    }
+
+    public override void OnNetworkSpawn()
+    {
+        base.OnNetworkSpawn();
+        SetUpgradeLevel(AbilityDataHolder.GetLevel(abilityName));
+    }
+
     public float GetRemainingCooldown()
     {
+        if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
+        {
+            double nowServerTime = NetworkManager.Singleton.ServerTime.Time;
+            float remainingNet = (float)(cooldownEndServerTime.Value - nowServerTime);
+            if (remainingNet > 0f)
+            {
+                return remainingNet;
+            }
+        }
+
         if (IsServer)
         {
             float remainingServer = (lastUseTime + cooldownTime) - Time.time;
@@ -41,7 +73,7 @@ public class AbilityBehindYou : NetworkBehaviour, IAbilityCooldown
 
     void Update()
     {
-        if (!IsOwner) return;
+        if (!IsOwner || !IsSpawned) return;
 
         bool isOnCooldown = GetRemainingCooldown() > 0f;
 
@@ -53,6 +85,11 @@ public class AbilityBehindYou : NetworkBehaviour, IAbilityCooldown
 
         if (Input.GetKeyDown(assignedKey))
         {
+            if (AbilityJammer.IsPlayerJammed(this, "Behind You"))
+            {
+                return;
+            }
+
             if (isOnCooldown)
             {
                 Debug.Log("[BehindYou] Skill masih cooldown!");
@@ -66,21 +103,35 @@ public class AbilityBehindYou : NetworkBehaviour, IAbilityCooldown
     [ServerRpc]
     private void TryUseBehindYouServerRpc()
     {
-        if (Time.time < lastUseTime + cooldownTime)
+        if (!IsSpawned) return;
+
+        if (AbilityJammer.IsPlayerJammed(this, "Behind You"))
         {
             return;
         }
 
-        // List untuk menampung semua player lain yang ada di map
-        List<GameObject> validTargets = new List<GameObject>();
+        if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
+        {
+            if (NetworkManager.Singleton.ServerTime.Time < cooldownEndServerTime.Value)
+                return;
+        }
+        else if (Time.time < lastUseTime + cooldownTime)
+        {
+            return;
+        }
 
+        if (NetworkManager.Singleton == null || NetworkManager.Singleton.SpawnManager == null)
+        {
+            return;
+        }
+
+        List<GameObject> validTargets = new List<GameObject>();
         var spawnedObjects = NetworkManager.Singleton.SpawnManager.SpawnedObjects;
+
         foreach (var kvp in spawnedObjects)
         {
             NetworkObject netObj = kvp.Value;
-
-            // Masukkan objek yang memiliki komponen AbilityBehindYou (atau tag Player) dan bukan diri sendiri
-            if (netObj.gameObject != gameObject && netObj.CompareTag("Player"))
+            if (netObj != null && netObj.gameObject != gameObject && netObj.CompareTag("Player"))
             {
                 validTargets.Add(netObj.gameObject);
             }
@@ -88,21 +139,23 @@ public class AbilityBehindYou : NetworkBehaviour, IAbilityCooldown
 
         if (validTargets.Count > 0)
         {
-            // Pilih secara acak (random) satu player dari daftar yang ada di map
             int randomIndex = Random.Range(0, validTargets.Count);
             GameObject targetPlayer = validTargets[randomIndex];
 
-            // Hitung posisi di belakang target
-            Vector3 targetPosition = targetPlayer.transform.position - (targetPlayer.transform.forward * 1.5f);
+            Vector3 targetPosition = targetPlayer.transform.position - (targetPlayer.transform.forward * behindDistance);
             targetPosition.y = targetPlayer.transform.position.y;
 
-            // Jalankan perpindahan dan sinkronkan ke semua client
             ExecuteTeleportClientRpc(targetPosition, targetPlayer.transform.position);
 
             lastUseTime = Time.time;
+            if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
+            {
+                cooldownEndServerTime.Value = NetworkManager.Singleton.ServerTime.Time + cooldownTime;
+            }
+
             TriggerCooldownClientRpc(cooldownTime);
 
-            Debug.Log($"[BehindYou] Berpindah secara acak ke belakang player {targetPlayer.name}!");
+            Debug.Log($"[BehindYou Lv.{abilityLevel}] Berpindah secara acak ke belakang player {targetPlayer.name}!");
         }
         else
         {
@@ -116,14 +169,12 @@ public class AbilityBehindYou : NetworkBehaviour, IAbilityCooldown
         CharacterController charController = GetComponent<CharacterController>();
         Component netTransform = GetComponent("ClientNetworkTransform");
 
-        // Nonaktifkan sementara komponen pengatur posisi agar teleport tidak diblokir
         if (netTransform != null) ((Behaviour)netTransform).enabled = false;
         if (charController != null) charController.enabled = false;
 
         transform.position = newPosition;
         transform.LookAt(new Vector3(targetPos.x, transform.position.y, targetPos.z));
 
-        // Nyalakan kembali komponennya
         if (charController != null) charController.enabled = true;
         if (netTransform != null) ((Behaviour)netTransform).enabled = true;
     }

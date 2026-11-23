@@ -10,9 +10,19 @@ public class AbilityDuckKun : NetworkBehaviour, IAbilityCooldown
     public Sprite abilityIcon;
     public float cooldownTime = 90f;
 
+    [Header("Upgrade Settings (Max Lv 3)")]
+    [Range(1, 3)] public int abilityLevel = 1;
+    public int maxAbilityLevel = 3;
+
     private float lastUseTime = -999f;
     private float clientCooldownEndTime = -1f;
     private bool wasOnCooldown = false;
+
+    private readonly NetworkVariable<double> cooldownEndServerTime = new NetworkVariable<double>(
+        0.0,
+        NetworkVariableReadPermission.Everyone,
+        NetworkVariableWritePermission.Server
+    );
 
     [Header("Buff/Debuff Settings")]
     public float selfBuffDuration = 60f;
@@ -41,13 +51,90 @@ public class AbilityDuckKun : NetworkBehaviour, IAbilityCooldown
     [Header("Input Settings")]
     public KeyCode assignedKey = KeyCode.Q;
 
+    private readonly List<Coroutine> activeEffectCoroutines = new List<Coroutine>();
+    private Coroutine serverBuffCoroutine;
+
     public string AbilityName => abilityName;
     public Sprite AbilityIcon => abilityIcon;
     public float CooldownDuration => cooldownTime;
     public KeyCode AssignedKey => assignedKey;
 
+    private double GetCurrentTime()
+    {
+        if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
+        {
+            return NetworkManager.Singleton.ServerTime.Time;
+        }
+        return Time.time;
+    }
+
+    public void SetUpgradeLevel(int newLevel)
+    {
+        abilityLevel = Mathf.Clamp(newLevel, 1, maxAbilityLevel);
+    }
+
+    public override void OnNetworkSpawn()
+    {
+        base.OnNetworkSpawn();
+        abilityLevel = Mathf.Clamp(AbilityDataHolder.GetLevel(abilityName), 1, maxAbilityLevel);
+
+        Transform myIndicator = FindDeepChild(transform, targetIndicatorName);
+        if (myIndicator != null)
+        {
+            myIndicator.gameObject.SetActive(false);
+        }
+    }
+
+    public override void OnNetworkDespawn()
+    {
+        CleanupDuckKun();
+        base.OnNetworkDespawn();
+    }
+
+    private void OnDestroy()
+    {
+        CleanupDuckKun();
+    }
+
+    private void CleanupDuckKun()
+    {
+        foreach (var routine in activeEffectCoroutines)
+        {
+            if (routine != null) StopCoroutine(routine);
+        }
+        activeEffectCoroutines.Clear();
+
+        if (serverBuffCoroutine != null)
+        {
+            StopCoroutine(serverBuffCoroutine);
+            serverBuffCoroutine = null;
+        }
+
+        Transform myIndicator = FindDeepChild(transform, targetIndicatorName);
+        if (myIndicator != null)
+        {
+            myIndicator.gameObject.SetActive(false);
+        }
+
+        if (IsServer)
+        {
+            scoreMultiplier.Value = 1.0f;
+            isBuffActive.Value = false;
+        }
+    }
+
     public float GetRemainingCooldown()
     {
+        if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
+        {
+            double nowServerTime = NetworkManager.Singleton.ServerTime.Time;
+            float remainingNet = (float)(cooldownEndServerTime.Value - nowServerTime);
+            if (remainingNet > 0f)
+            {
+                return remainingNet;
+            }
+        }
+
         if (IsServer)
         {
             float remainingServer = (lastUseTime + cooldownTime) - Time.time;
@@ -63,18 +150,9 @@ public class AbilityDuckKun : NetworkBehaviour, IAbilityCooldown
         return 0f;
     }
 
-    private void Start()
-    {
-        Transform myIndicator = FindDeepChild(transform, targetIndicatorName);
-        if (myIndicator != null)
-        {
-            myIndicator.gameObject.SetActive(false);
-        }
-    }
-
     void Update()
     {
-        if (!IsOwner) return;
+        if (!IsOwner || !IsSpawned) return;
 
         bool isOnCooldown = GetRemainingCooldown() > 0f;
 
@@ -86,6 +164,11 @@ public class AbilityDuckKun : NetworkBehaviour, IAbilityCooldown
 
         if (Input.GetKeyDown(assignedKey))
         {
+            if (AbilityJammer.IsPlayerJammed(this, "Duck-Kun"))
+            {
+                return;
+            }
+
             if (isOnCooldown)
             {
                 Debug.Log("[Duck-Kun] Skill masih cooldown!");
@@ -106,18 +189,84 @@ public class AbilityDuckKun : NetworkBehaviour, IAbilityCooldown
 
     public void OnTargetSelected(ulong targetNetworkObjectId)
     {
+        if (!IsOwner || !IsSpawned) return;
+
+        if (AbilityJammer.IsPlayerJammed(this, "Duck-Kun"))
+        {
+            return;
+        }
+
         RequestDuckKunServerRpc(targetNetworkObjectId);
     }
 
     [ServerRpc]
     private void RequestDuckKunServerRpc(ulong targetNetworkObjectId)
     {
-        if (Time.time < lastUseTime + cooldownTime) return;
+        if (!IsSpawned) return;
+
+        if (AbilityJammer.IsPlayerJammed(this, "Duck-Kun"))
+        {
+            return;
+        }
+
+        if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
+        {
+            if (NetworkManager.Singleton.ServerTime.Time < cooldownEndServerTime.Value)
+                return;
+        }
+        else if (Time.time < lastUseTime + cooldownTime)
+        {
+            return;
+        }
+
+        if (NetworkManager.Singleton == null || NetworkManager.Singleton.SpawnManager == null ||
+            !NetworkManager.Singleton.SpawnManager.SpawnedObjects.TryGetValue(targetNetworkObjectId, out NetworkObject targetNetObj))
+        {
+            Debug.LogWarning("[Duck-Kun] Target tidak ditemukan di SpawnedObjects!");
+            return;
+        }
 
         lastUseTime = Time.time;
+        if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
+        {
+            cooldownEndServerTime.Value = NetworkManager.Singleton.ServerTime.Time + cooldownTime;
+        }
 
-        ApplyDuckKunClientRpc(targetNetworkObjectId, NetworkObjectId);
+        bool isSelf = (targetNetworkObjectId == NetworkObjectId);
+        float duration = isSelf ? selfBuffDuration : enemyDebuffDuration;
+        float multiplierValue = isSelf ? selfMultiplier : enemyMultiplier;
+
+        AbilityDuckKun targetAbility = targetNetObj.GetComponent<AbilityDuckKun>();
+        if (targetAbility != null)
+        {
+            if (targetAbility.serverBuffCoroutine != null)
+            {
+                targetAbility.StopCoroutine(targetAbility.serverBuffCoroutine);
+            }
+            targetAbility.serverBuffCoroutine = targetAbility.StartCoroutine(
+                targetAbility.ServerBuffTimerRoutine(multiplierValue, duration, isSelf)
+            );
+        }
+
+        ApplyDuckKunClientRpc(targetNetworkObjectId, NetworkObjectId, duration, multiplierValue, isSelf);
         TriggerCooldownClientRpc(cooldownTime);
+    }
+
+    private IEnumerator ServerBuffTimerRoutine(float multiplierValue, float duration, bool isSelf)
+    {
+        string effectType = isSelf ? "BUFF (Self)" : "DEBUFF (Enemy)";
+        Debug.Log($"[Duck-Kun Lv.{abilityLevel}] {gameObject.name} terkena {effectType}! Multiplier={multiplierValue} selama {duration}s.");
+
+        isBuffActive.Value = true;
+        scoreMultiplier.Value = multiplierValue;
+
+        yield return new WaitForSeconds(duration);
+
+        scoreMultiplier.Value = 1.0f;
+        isBuffActive.Value = false;
+        serverBuffCoroutine = null;
+
+        Debug.Log($"[Duck-Kun] Efek pada {gameObject.name} telah habis.");
     }
 
     [ClientRpc]
@@ -131,59 +280,40 @@ public class AbilityDuckKun : NetworkBehaviour, IAbilityCooldown
     }
 
     [ClientRpc]
-    private void ApplyDuckKunClientRpc(ulong targetNetObjId, ulong casterNetObjId)
+    private void ApplyDuckKunClientRpc(ulong targetNetObjId, ulong casterNetObjId, float duration, float multiplierValue, bool isSelf)
     {
-        if (NetworkManager.Singleton.SpawnManager.SpawnedObjects.TryGetValue(targetNetObjId, out NetworkObject targetNetObj))
+        if (NetworkManager.Singleton != null &&
+            NetworkManager.Singleton.SpawnManager != null &&
+            NetworkManager.Singleton.SpawnManager.SpawnedObjects.TryGetValue(targetNetObjId, out NetworkObject targetNetObj))
         {
-            bool isSelf = (targetNetObjId == casterNetObjId);
-            StartCoroutine(DuckKunRoutine(targetNetObj.gameObject, isSelf, targetNetObjId));
+            Coroutine routine = StartCoroutine(DuckKunVisualRoutine(targetNetObj, isSelf, duration, multiplierValue));
+            activeEffectCoroutines.Add(routine);
         }
     }
 
-    private IEnumerator DuckKunRoutine(GameObject target, bool isSelf, ulong targetNetObjId)
+    private IEnumerator DuckKunVisualRoutine(NetworkObject targetNetObj, bool isSelf, float duration, float multiplierValue)
     {
-        float duration = isSelf ? selfBuffDuration : enemyDebuffDuration;
-        float multiplierValue = isSelf ? selfMultiplier : enemyMultiplier;
-
         string effectType = isSelf ? "BUFF (Self)" : "DEBUFF (Enemy)";
-        Debug.Log($"[Duck-Kun] {target.name} terkena {effectType}! Multiplier diubah menjadi {multiplierValue} selama {duration} detik.");
+        Debug.Log($"[Duck-Kun] Visual {effectType} pada {targetNetObj.gameObject.name} (Multiplier={multiplierValue}, Durasi={duration}s).");
 
-        AbilityDuckKun targetAbility = target.GetComponent<AbilityDuckKun>();
-
-        if (IsServer && targetAbility != null)
+        Transform indicator = FindDeepChild(targetNetObj.transform, targetIndicatorName);
+        if (indicator != null)
         {
-            targetAbility.isBuffActive.Value = true;
-            targetAbility.scoreMultiplier.Value = multiplierValue;
+            indicator.gameObject.SetActive(true);
         }
-
-        ToggleTargetIndicatorClientRpc(targetNetObjId, true);
+        else
+        {
+            Debug.LogWarning($"[Duck-Kun] Objek '{targetIndicatorName}' tidak ditemukan pada prefab target!");
+        }
 
         yield return new WaitForSeconds(duration);
 
-        ToggleTargetIndicatorClientRpc(targetNetObjId, false);
-
-        if (IsServer && targetAbility != null)
+        if (targetNetObj != null)
         {
-            targetAbility.scoreMultiplier.Value = 1.0f;
-            targetAbility.isBuffActive.Value = false;
-        }
-
-        Debug.Log($"[Duck-Kun] Efek pada {target.name} telah habis.");
-    }
-
-    [ClientRpc]
-    private void ToggleTargetIndicatorClientRpc(ulong targetNetworkObjectId, bool isActive)
-    {
-        if (NetworkManager.Singleton.SpawnManager.SpawnedObjects.TryGetValue(targetNetworkObjectId, out NetworkObject targetNetObj))
-        {
-            Transform indicator = FindDeepChild(targetNetObj.transform, targetIndicatorName);
-            if (indicator != null)
+            Transform endIndicator = FindDeepChild(targetNetObj.transform, targetIndicatorName);
+            if (endIndicator != null)
             {
-                indicator.gameObject.SetActive(isActive);
-            }
-            else
-            {
-                Debug.LogWarning($"[Duck-Kun] Objek '{targetIndicatorName}' tidak ditemukan pada prefab target!");
+                endIndicator.gameObject.SetActive(false);
             }
         }
     }
