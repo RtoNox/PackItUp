@@ -36,6 +36,7 @@ public class PlayerAbilityManager : NetworkBehaviour
         {
             LocalInstance = this;
 
+            // 1st Equip -> Slot 1 (Q), 2nd Equip -> Slot 2 (E)
             string localAbility1 = string.IsNullOrEmpty(AbilityDataHolder.SelectedAbility1)
                 ? "Steal"
                 : AbilityDataHolder.SelectedAbility1;
@@ -44,9 +45,8 @@ public class PlayerAbilityManager : NetworkBehaviour
                 ? "Stun"
                 : AbilityDataHolder.SelectedAbility2;
 
-            Debug.Log($"[Client] Kirim ke Server -> Slot 1 (Q): {localAbility1}, Slot 2 (E): {localAbility2}");
+            Debug.Log($"[Client] Kirim ke Server -> 1st Equip (Q): {localAbility1}, 2nd Equip (E): {localAbility2}");
 
-            // Apply immediately on the owning client so HUD art and inputs match on frame 1
             ApplyAbilities(localAbility1, localAbility2);
 
             SubmitAbilityChoiceServerRpc(localAbility1, localAbility2);
@@ -81,9 +81,46 @@ public class PlayerAbilityManager : NetworkBehaviour
         netAbility2.Value = ab2;
     }
 
+    public MonoBehaviour GetAbilityComponentForSlot(int slotIndex)
+    {
+        string abilityName = slotIndex == 0 ? CurrentAbility1 : CurrentAbility2;
+        return GetAbilityComponentByName(abilityName);
+    }
+
+    public MonoBehaviour GetAbilityComponentByName(string abilityName)
+    {
+        if (string.IsNullOrEmpty(abilityName)) return null;
+
+        string cleanName = abilityName.Trim();
+
+        if (string.Equals(cleanName, "Steal", StringComparison.OrdinalIgnoreCase))
+            return GetComponent<AbilitySteal>();
+
+        if (string.Equals(cleanName, "Stun", StringComparison.OrdinalIgnoreCase))
+            return GetComponent<AbilityStun>();
+
+        if (string.Equals(cleanName, "Jammer", StringComparison.OrdinalIgnoreCase))
+            return GetComponent<AbilityJammer>();
+
+        if (string.Equals(cleanName, "Warp", StringComparison.OrdinalIgnoreCase))
+            return GetComponent<AbilityWarp>();
+
+        if (string.Equals(cleanName, "Behind You", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(cleanName, "BehindYou", StringComparison.OrdinalIgnoreCase))
+            return GetComponent<AbilityBehindYou>();
+
+        if (string.Equals(cleanName, "Duck-Kun", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(cleanName, "DuckKun", StringComparison.OrdinalIgnoreCase))
+            return GetComponent<AbilityDuckKun>();
+
+        if (string.Equals(cleanName, "Marionette", StringComparison.OrdinalIgnoreCase))
+            return GetComponent<AbilityMarionette>();
+
+        return null;
+    }
+
     private void ApplyAbilities(string ability1, string ability2)
     {
-        // Only the owning client (local input + HUD) and the server (server-side checks like Duck-Kun) need these active
         if (!IsOwner && !IsServer) return;
 
         CurrentAbility1 = ability1;
@@ -97,7 +134,6 @@ public class PlayerAbilityManager : NetworkBehaviour
         AbilityDuckKun duckKunComp = GetComponent<AbilityDuckKun>();
         AbilityMarionette marionetteComp = GetComponent<AbilityMarionette>();
 
-        // Disable all abilities first
         if (stealComp != null) stealComp.enabled = false;
         if (stunComp != null) stunComp.enabled = false;
         if (jammerComp != null) jammerComp.enabled = false;

@@ -90,13 +90,13 @@ public class CameraController : MonoBehaviour
         }
 
         // Keyboard camera rotation
-        // if (useKeyboardRotation)
-        // {
-        //     if (Input.GetKey(KeyCode.Q))
-        //         currentYaw -= keyboardRotationSpeed * Time.deltaTime;
-        //     if (Input.GetKey(KeyCode.E))
-        //         currentYaw += keyboardRotationSpeed * Time.deltaTime;
-        // }
+        if (useKeyboardRotation)
+        {
+            if (Input.GetKey(KeyCode.Q))
+                currentYaw -= keyboardRotationSpeed * Time.deltaTime;
+            if (Input.GetKey(KeyCode.E))
+                currentYaw += keyboardRotationSpeed * Time.deltaTime;
+        }
 
         // Mouse camera rotation
         if (useMouseRotation &&

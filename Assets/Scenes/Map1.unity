@@ -2344,8 +2344,8 @@ RectTransform:
   - {fileID: 2105935200}
   - {fileID: 690593313}
   - {fileID: 719267661}
-  - {fileID: 816365786}
   - {fileID: 401896429}
+  - {fileID: 816365786}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
@@ -2849,7 +2849,7 @@ GameObject:
   - component: {fileID: 401896429}
   - component: {fileID: 401896430}
   m_Layer: 5
-  m_Name: SlotCooldown2
+  m_Name: SlotCooldown1
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -2889,6 +2889,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fef3dc40197bf664185728e633cdab81, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::AbilityCooldownSlotUI
+  autoDetectSlotOrder: 1
   abilitySlotIndex: 1
   targetKey: 0
   statusText: {fileID: 260262455}
@@ -3804,6 +3805,12 @@ MonoBehaviour:
   useMouseRotation: 1
   mouseSensitivity: 3
   lockCursor: 1
+  collisionMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  collisionRadius: 0.3
+  collisionPadding: 0.1
+  returnSpeed: 10
 --- !u!114 &569402685
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5933,7 +5940,7 @@ GameObject:
   - component: {fileID: 816365786}
   - component: {fileID: 816365787}
   m_Layer: 5
-  m_Name: SlotCooldown1
+  m_Name: SlotCooldown2
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -5973,6 +5980,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fef3dc40197bf664185728e633cdab81, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::AbilityCooldownSlotUI
+  autoDetectSlotOrder: 1
   abilitySlotIndex: 0
   targetKey: 0
   statusText: {fileID: 628090021}

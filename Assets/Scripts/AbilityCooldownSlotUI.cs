@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 using UnityEngine.UI;
 using Unity.Netcode;
@@ -6,10 +7,13 @@ using TMPro;
 public class AbilityCooldownSlotUI : MonoBehaviour
 {
     [Header("Slot Binding")]
-    [Tooltip("0 = Slot kiri (Q), 1 = Slot kanan (E)")]
+    [Tooltip("Automatically maps 1st HUD slot to 1st Equip (Q) and 2nd HUD slot to 2nd Equip (E)")]
+    public bool autoDetectSlotOrder = true;
+
+    [Tooltip("0 = 1st Equip (Q), 1 = 2nd Equip (E)")]
     public int abilitySlotIndex = 0;
 
-    [Tooltip("Set KeyCode.Q untuk kiri, KeyCode.E untuk kanan, atau KeyCode.None untuk otomatis Q (0) / E (1)")]
+    [Tooltip("Set KeyCode.Q for 1st Equip, KeyCode.E for 2nd Equip, or None for automatic detection")]
     public KeyCode targetKey = KeyCode.None;
 
     [Header("UI References")]
@@ -29,12 +33,15 @@ public class AbilityCooldownSlotUI : MonoBehaviour
     private IAbilityCooldown boundAbility;
     private MonoBehaviour boundMono;
     private NetworkBehaviour boundNetBehaviour;
+    private string boundAbilityName;
     private bool isBound = false;
     private float rebindTimer = 0f;
     private bool loggedWaitingForOwner = false;
 
     private void Awake()
     {
+        GetResolvedSlotIndex();
+
         if (cooldownRingFill != null)
         {
             cooldownRingFill.type = Image.Type.Filled;
@@ -89,29 +96,95 @@ public class AbilityCooldownSlotUI : MonoBehaviour
         boundAbility = null;
         boundMono = null;
         boundNetBehaviour = null;
+        boundAbilityName = null;
         rebindTimer = 0f;
         TryBindLocalPlayerAbility();
     }
 
-    private KeyCode GetExpectedKey()
+    private int GetResolvedSlotIndex()
     {
-        if (targetKey != KeyCode.None)
-            return targetKey;
+        if (targetKey == KeyCode.Q)
+        {
+            abilitySlotIndex = 0;
+            return 0;
+        }
 
-        return abilitySlotIndex == 0 ? KeyCode.Q : KeyCode.E;
+        if (targetKey == KeyCode.E)
+        {
+            abilitySlotIndex = 1;
+            return 1;
+        }
+
+        if (autoDetectSlotOrder)
+        {
+            if (transform.parent != null)
+            {
+                AbilityCooldownSlotUI[] siblingSlots = transform.parent.GetComponentsInChildren<AbilityCooldownSlotUI>(true);
+                if (siblingSlots.Length >= 2)
+                {
+                    int siblingIndex = Array.IndexOf(siblingSlots, this);
+                    if (siblingIndex >= 0)
+                    {
+                        abilitySlotIndex = siblingIndex;
+                        return siblingIndex;
+                    }
+                }
+            }
+
+            Canvas parentCanvas = GetComponentInParent<Canvas>();
+            if (parentCanvas != null && parentCanvas.rootCanvas != null)
+            {
+                AbilityCooldownSlotUI[] canvasSlots = parentCanvas.rootCanvas.GetComponentsInChildren<AbilityCooldownSlotUI>(true);
+                if (canvasSlots.Length >= 2)
+                {
+                    int canvasIndex = Array.IndexOf(canvasSlots, this);
+                    if (canvasIndex >= 0)
+                    {
+                        abilitySlotIndex = canvasIndex;
+                        return canvasIndex;
+                    }
+                }
+            }
+        }
+
+        return Mathf.Clamp(abilitySlotIndex, 0, 1);
+    }
+
+    private string GetEquippedSkillNameForSlot(PlayerAbilityManager localManager, int slotIndex)
+    {
+        if (localManager != null)
+        {
+            return slotIndex == 0 ? localManager.CurrentAbility1 : localManager.CurrentAbility2;
+        }
+
+        if (slotIndex == 0)
+            return string.IsNullOrEmpty(AbilityDataHolder.SelectedAbility1) ? "Steal" : AbilityDataHolder.SelectedAbility1;
+
+        return string.IsNullOrEmpty(AbilityDataHolder.SelectedAbility2) ? "Stun" : AbilityDataHolder.SelectedAbility2;
     }
 
     private void Update()
     {
+        PlayerAbilityManager localManager = PlayerAbilityManager.LocalInstance;
+        int resolvedSlot = GetResolvedSlotIndex();
+
+        bool slotChoiceChanged = false;
+        if (isBound)
+        {
+            string expectedName = GetEquippedSkillNameForSlot(localManager, resolvedSlot);
+            slotChoiceChanged = !string.Equals(boundAbilityName, expectedName, StringComparison.OrdinalIgnoreCase);
+        }
+
         bool invalidNetworkState = boundNetBehaviour != null && (!boundNetBehaviour.IsSpawned || !boundNetBehaviour.IsOwner);
         bool abilityDisabled = boundMono == null || !boundMono.enabled;
 
-        if (!isBound || boundAbility == null || invalidNetworkState || abilityDisabled)
+        if (!isBound || boundAbility == null || invalidNetworkState || abilityDisabled || slotChoiceChanged)
         {
             isBound = false;
             boundAbility = null;
             boundMono = null;
             boundNetBehaviour = null;
+            boundAbilityName = null;
 
             rebindTimer -= Time.deltaTime;
             if (rebindTimer <= 0f)
@@ -128,7 +201,6 @@ public class AbilityCooldownSlotUI : MonoBehaviour
             }
         }
 
-        // Keep icon synced in case it changed
         if (abilityIconImage != null && abilityIconImage.sprite != boundAbility.AbilityIcon)
         {
             SetIconVisual(boundAbility.AbilityIcon);
@@ -202,88 +274,54 @@ public class AbilityCooldownSlotUI : MonoBehaviour
         boundAbility = null;
         boundMono = null;
         boundNetBehaviour = null;
+        boundAbilityName = null;
         isBound = false;
 
-        if (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsListening || NetworkManager.Singleton.SpawnManager == null)
+        PlayerAbilityManager localManager = PlayerAbilityManager.LocalInstance;
+
+        if (localManager == null && NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening && NetworkManager.Singleton.SpawnManager != null)
+        {
+            foreach (var kvp in NetworkManager.Singleton.SpawnManager.SpawnedObjects)
+            {
+                NetworkObject netObj = kvp.Value;
+                if (netObj != null && netObj.IsSpawned && netObj.IsOwner && netObj.TryGetComponent(out PlayerAbilityManager foundManager))
+                {
+                    localManager = foundManager;
+                    break;
+                }
+            }
+        }
+
+        if (localManager == null)
         {
             if (enableDebugLogs && !loggedWaitingForOwner)
             {
-                Debug.LogWarning($"[CooldownUI:{name}] NetworkManager / SpawnManager belum siap.");
+                Debug.LogWarning($"[CooldownUI:{name}] Menunggu PlayerAbilityManager lokal...");
                 loggedWaitingForOwner = true;
             }
             return;
         }
 
-        KeyCode expectedKey = GetExpectedKey();
-        bool foundOwnedPlayer = false;
+        loggedWaitingForOwner = false;
 
-        foreach (var kvp in NetworkManager.Singleton.SpawnManager.SpawnedObjects)
+        int resolvedSlot = GetResolvedSlotIndex();
+        string equippedName = GetEquippedSkillNameForSlot(localManager, resolvedSlot);
+        MonoBehaviour abilityComp = localManager.GetAbilityComponentByName(equippedName);
+
+        if (abilityComp != null && abilityComp.enabled && abilityComp is IAbilityCooldown abilityCooldown)
         {
-            NetworkObject netObj = kvp.Value;
-            if (netObj == null || !netObj.IsSpawned || !netObj.IsOwner) continue;
-            if (!netObj.CompareTag("Player")) continue;
+            boundMono = abilityComp;
+            boundAbility = abilityCooldown;
+            boundNetBehaviour = abilityComp as NetworkBehaviour;
+            boundAbilityName = equippedName;
+            isBound = true;
 
-            foundOwnedPlayer = true;
-            loggedWaitingForOwner = false;
+            SetIconVisual(abilityCooldown.AbilityIcon);
 
-            MonoBehaviour[] monos = netObj.GetComponents<MonoBehaviour>();
-
-            // Pass 1: Match strictly by assigned key (KeyCode.Q for Slot 0, KeyCode.E for Slot 1)
-            foreach (var mono in monos)
+            if (enableDebugLogs)
             {
-                if (mono != null && mono.enabled && mono is IAbilityCooldown abilityCooldown)
-                {
-                    if (abilityCooldown.AssignedKey == expectedKey)
-                    {
-                        BindAbility(mono, abilityCooldown, netObj.OwnerClientId);
-                        return;
-                    }
-                }
+                Debug.Log($"[CooldownUI:{name}] Equip {resolvedSlot + 1} bound ke '{equippedName}' (Key: {abilityCooldown.AssignedKey}).");
             }
-
-            // Pass 2 (Fallback): If the player selected the exact same ability for both slots
-            // (so AssignedKey was overwritten to KeyCode.E), match by the active ability name for this slot
-            string targetAbilityName = null;
-            if (PlayerAbilityManager.LocalInstance != null)
-            {
-                targetAbilityName = abilitySlotIndex == 0
-                    ? PlayerAbilityManager.LocalInstance.CurrentAbility1
-                    : PlayerAbilityManager.LocalInstance.CurrentAbility2;
-            }
-
-            foreach (var mono in monos)
-            {
-                if (mono != null && mono.enabled && mono is IAbilityCooldown abilityCooldown)
-                {
-                    if (!string.IsNullOrEmpty(targetAbilityName) &&
-                        string.Equals(abilityCooldown.AbilityName.Trim(), targetAbilityName.Trim(), System.StringComparison.OrdinalIgnoreCase))
-                    {
-                        BindAbility(mono, abilityCooldown, netObj.OwnerClientId);
-                        return;
-                    }
-                }
-            }
-        }
-
-        if (enableDebugLogs && !foundOwnedPlayer && !loggedWaitingForOwner)
-        {
-            Debug.LogWarning($"[CooldownUI:{name}] Belum menemukan Spawned Player dengan IsOwner=true.");
-            loggedWaitingForOwner = true;
-        }
-    }
-
-    private void BindAbility(MonoBehaviour mono, IAbilityCooldown abilityCooldown, ulong ownerClientId)
-    {
-        boundMono = mono;
-        boundAbility = abilityCooldown;
-        boundNetBehaviour = mono as NetworkBehaviour;
-        isBound = true;
-
-        SetIconVisual(abilityCooldown.AbilityIcon);
-
-        if (enableDebugLogs)
-        {
-            Debug.Log($"[CooldownUI:{name}] Bound ke '{abilityCooldown.AbilityName}' (Key: {abilityCooldown.AssignedKey}) pada Player OwnerClientId={ownerClientId}.");
         }
     }
 }
